@@ -94,7 +94,7 @@ namespace BNM {
         };
 
         // Should be used for NewClass if Base type is MonoBehaviour
-        struct MonoBehaviour : public Object {
+        struct [[maybe_unused]] MonoBehaviour : public Object {
 #if UNITY_VER >= 222
             void *m_CancellationTokenSource{};
 #endif
@@ -105,23 +105,24 @@ namespace BNM {
     template <typename T>
     inline bool IsUnityObjectAlive(T o) {
         return ((UnityEngine::Object *)o)->Alive();
-    };
+    }
     // Only if objects children of UnityEngine.Object or objects are UnityEngine.Object
     template <typename T1, typename T2>
     inline bool IsSameUnityObject(T1 o1, T2 o2) {
         auto obj1 = (UnityEngine::Object *)o1;
         auto obj2 = (UnityEngine::Object *)o2;
         return obj1->Same(obj2);
-    };
+    }
     template<typename MET_T, typename PTR_T>
     inline void InitFunc(MET_T& method, PTR_T ptr) {
         *(void **)&method = (void *)ptr;
-    };
+    }
     template<typename T>
     struct DataIterator {
         T *value{};
         constexpr DataIterator() = default;
-        constexpr DataIterator(const T *value) : value((T *)value) {}
+
+        [[maybe_unused]] constexpr DataIterator(const T *value) : value((T *)value) {}
         inline T& operator *() {
             BNM_LOG_ERR_IF(!value, "An empty object in iterator");
             return *value;
@@ -169,11 +170,11 @@ namespace BNM {
             IL2CPP::Il2CppChar chars[0];
             std::string str();
 #ifdef BNM_DEPRECATED
-            [[deprecated("Используйте str вместо get_string")]] inline std::string get_string() { return str(); }
-            [[deprecated("Потенциальная утечка памяти")]] inline const char *get_const_char() { return str().c_str(); }
-            [[deprecated("Потенциальная утечка памяти")]] inline const char *c_str() { return str().c_str(); }
+            [[maybe_unused]] [[deprecated("Use str instead of get_string")]] inline std::string get_string() { return str(); }
+//            [[maybe_unused]] [[deprecated("Potential memory leak")]] inline const char *get_const_char() { return str().c_str(); }
+//            [[maybe_unused]] [[deprecated("Potential memory leak")]] inline const char *c_str() { return str().c_str(); }
 #endif
-            unsigned int GetHash() const;
+            [[maybe_unused]] unsigned int GetHash() const;
             static monoString *Create(const char *str);
             static monoString *Create(const std::string &str);
             static monoString *Empty();
@@ -202,7 +203,7 @@ namespace BNM {
                 memcpy(&m_Items[0], arr, size * sizeof(T));
                 return true;
             }
-            inline void CopyTo(T *arr) const { BNM_CHECK_SELF(); if (!CheckObj(m_Items)) return; memcpy(arr, m_Items, sizeof(T) * capacity); }
+            [[maybe_unused]] inline void CopyTo(T *arr) const { BNM_CHECK_SELF(); if (!CheckObj(m_Items)) return; memcpy(arr, m_Items, sizeof(T) * capacity); }
             inline DataIterator<T> operator[] (IL2CPP::il2cpp_array_size_t index) const { BNM_CHECK_SELF({}); if (GetCapacity() < index) return {}; return &m_Items[index]; }
             inline DataIterator<T> At(IL2CPP::il2cpp_array_size_t index) const { BNM_CHECK_SELF({}); if (GetCapacity() < index) return {}; return &m_Items[index]; }
             inline bool Empty() const { BNM_CHECK_SELF(false); return GetCapacity() <= 0;}
@@ -239,7 +240,7 @@ namespace BNM {
                 int version{};
                 T current{};
                 constexpr Enumerator() = default;
-                Enumerator(monoList<T> *list) : Enumerator() { this->list = list; }
+                [[maybe_unused]] Enumerator(monoList<T> *list) : Enumerator() { this->list = list; }
 
                 // The original C# code is not needed: it is useless in C++
                 // That's why there's just code to support C++ foreach
@@ -298,7 +299,7 @@ namespace BNM {
             }
             DataIterator<T> operator[] (int index) const { if (index >= size) return {}; return &items->m_Items[index]; }
             DataIterator<T> At(int index) const { if (index >= size) return {}; return &items->m_Items[index]; }
-            inline bool CopyFrom(const std::vector<T> &vec) { return CopyFrom((T *)vec.data(), (int)vec.size()); }
+            [[maybe_unused]] inline bool CopyFrom(const std::vector<T> &vec) { return CopyFrom((T *)vec.data(), (int)vec.size()); }
             bool CopyFrom(T *arr, int arrSize) {
                 BNM_CHECK_SELF(false);
                 Resize(arrSize);
@@ -434,10 +435,10 @@ namespace BNM {
         LoadClass(const std::string_view &namespaze, const std::string_view &name, const IL2CPP::Il2CppImage *image); // From class name and dll
         LoadClass(const std::string_view &namespaze, const std::string_view &name, const IL2CPP::Il2CppAssembly *assembly); // From class name and dll
 
-        std::vector<LoadClass> GetInnerClasses(bool includeParent = true) const; // Get all inner classes
-        std::vector<FieldBase> GetFields(bool includeParent = true) const; // Get all fields
-        std::vector<MethodBase> GetMethods(bool includeParent = true) const; // Get all methods
-        std::vector<PropertyBase> GetProperties(bool includeParent = true) const; // Get все свойства
+        [[maybe_unused]] std::vector<LoadClass> GetInnerClasses(bool includeParent = true) const; // Get all inner classes
+        [[maybe_unused]] std::vector<FieldBase> GetFields(bool includeParent = true) const; // Get all fields
+        [[maybe_unused]] std::vector<MethodBase> GetMethods(bool includeParent = true) const; // Get all methods
+        [[maybe_unused]] std::vector<PropertyBase> GetProperties(bool includeParent = true) const; // Get all properties
 
         MethodBase GetMethodByName(const std::string_view &name, int parameters = -1) const; // Get method by name and args count
         MethodBase GetMethodByName(const std::string_view &name, const std::vector<std::string_view> &parametersName) const; // Get method by name and args name
@@ -488,7 +489,7 @@ namespace BNM {
             BNM::Structures::Mono::monoArray<T> *array = NewArray<T>(1);
             BNM::Structures::Mono::monoList<T> *lst = (BNM::Structures::Mono::monoList<T> *)NewListInstance();
             if (!lst) {
-                BNM_LOG_ERR("Не удалось создать List для класса: %s", str().c_str());
+                BNM_LOG_ERR("Failed to create List for class: %s", str().c_str());
                 return nullptr;
             }
             lst->items = array;
@@ -513,10 +514,10 @@ namespace BNM {
         void *CreateNewObjectArgs(int args_count, const std::vector<std::string_view> &arg_names, Args ...args) const;
 
         // Check is LoadClass alive
-        inline bool Valid() const noexcept { return klass != nullptr; }
-        inline bool Alive() const noexcept { return Valid(); }
-        inline operator bool() noexcept { return Valid(); }
-        inline operator bool() const noexcept { return Valid(); }
+        [[maybe_unused]] inline bool Valid() const noexcept { return klass != nullptr; }
+        [[maybe_unused]] inline bool Alive() const noexcept { return Valid(); }
+        [[maybe_unused]] inline operator bool() noexcept { return Valid(); }
+        [[maybe_unused]] inline operator bool() const noexcept { return Valid(); }
     private: // Private) Just calls of il2cpp methods
         void TryInit() const;
         static IL2CPP::Il2CppObject *ObjBox(IL2CPP::Il2CppClass*, void*);
@@ -541,29 +542,29 @@ namespace BNM {
         FieldBase(const FieldBase &other);
 
         // Set instance
-        FieldBase &SetInstance(IL2CPP::Il2CppObject *val);
+        [[maybe_unused]] FieldBase &SetInstance(IL2CPP::Il2CppObject *val);
 
         // Get info
-        IL2CPP::FieldInfo *GetInfo() const;
+        [[maybe_unused]] IL2CPP::FieldInfo *GetInfo() const;
 
         // Get offset
-        BNM_PTR GetOffset() const;
+        [[maybe_unused]] BNM_PTR GetOffset() const;
 
         // Get pointer to field
-        void *GetFieldPointer() const;
+        [[maybe_unused]] void *GetFieldPointer() const;
 
 #ifdef BNM_ALLOW_STR_METHODS
         // Get info about field
         inline std::string str() const {
             if (init) return LoadClass(myInfo->parent).str() + OBFUSCATES_BNM(".(") + myInfo->name + OBFUSCATES_BNM(")");
-            return OBFUSCATE_BNM("Мёртвое поле");
+            return OBFUSCATE_BNM("Dead field");
         }
 #endif
 
         // Fast set instance
-        inline FieldBase &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
-        inline FieldBase &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
-        inline FieldBase &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        virtual inline FieldBase &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        virtual inline FieldBase &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
+        virtual inline FieldBase &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
 
         // Check is field alive
         inline bool Initialized() const noexcept { return init; }
@@ -582,7 +583,7 @@ namespace BNM {
         // Get pointer to field
         inline T *GetPointer() const {
             auto ptr = GetFieldPointer();
-            BNM_LOG_ERR_IF(ptr == nullptr, "Пустой указатель на поле [%s]", init ? str().c_str() : "Мертво");
+            BNM_LOG_ERR_IF(ptr == nullptr, "Null field pointer [%s]", init ? str().c_str() : "dead");
             return (T *)ptr;
         }
 
@@ -613,9 +614,9 @@ namespace BNM {
         inline Field<T> &operator=(T val) const { Set(std::move(val)); return *this; }
 
         // Fast set instance
-        inline Field<T> &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
-        inline Field<T> &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
-        inline Field<T> &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        inline Field<T> &operator[](void *val) override { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        inline Field<T> &operator[](IL2CPP::Il2CppObject *val) override { SetInstance(val); return *this;}
+        inline Field<T> &operator[](UnityEngine::Object *val) override { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
 
         // Copy other field, only for auto casts
         Field<T> &operator =(const FieldBase &other) {
@@ -638,29 +639,29 @@ namespace BNM {
         MethodBase(const MethodBase &other);
 
         // Set instance
-        MethodBase &SetInstance(IL2CPP::Il2CppObject *val);
+        [[maybe_unused]] MethodBase &SetInstance(IL2CPP::Il2CppObject *val);
 
         // Get info
-        IL2CPP::MethodInfo *GetInfo() const;
+        [[maybe_unused]] IL2CPP::MethodInfo *GetInfo() const;
 
         // Get offset
-        BNM_PTR GetOffset() const;
+        [[maybe_unused]] BNM_PTR GetOffset() const;
 
         // If method is `generic`, you can try get it with specific set of types
-        MethodBase GetGeneric(const std::vector<RuntimeTypeGetter> &templateTypes) const;
+        [[maybe_unused]] MethodBase GetGeneric(const std::vector<RuntimeTypeGetter> &templateTypes) const;
 
         // Get virtual version of method from setted object. Only for non-static methods.
-        MethodBase Virtualize() const;
+        [[maybe_unused]] MethodBase Virtualize() const;
 
         // Fast set instance
-        inline MethodBase &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
-        inline MethodBase &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
-        inline MethodBase &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        [[maybe_unused]] virtual inline MethodBase &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        [[maybe_unused]] virtual inline MethodBase &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
+        [[maybe_unused]] virtual inline MethodBase &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
 
         // Check is field alive
-        inline bool Initialized() const noexcept { return init; }
-        inline operator bool() noexcept { return Initialized(); }
-        inline operator bool() const noexcept { return Initialized(); }
+        [[maybe_unused]] inline bool Initialized() const noexcept { return init; }
+        [[maybe_unused]] inline operator bool() noexcept { return Initialized(); }
+        [[maybe_unused]] inline operator bool() const noexcept { return Initialized(); }
 
 #ifdef BNM_ALLOW_STR_METHODS
         // Get info about method
@@ -670,12 +671,12 @@ namespace BNM {
 #else
 #define kls declaring_type
 #endif
-            if (!init) return OBFUSCATE_BNM("Мёртвый метод");
+            if (!init) return OBFUSCATE_BNM("Dead method");
             return LoadClass(myInfo->return_type).str() + OBFUSCATES_BNM(" ") +
                 LoadClass(myInfo->kls).str() + OBFUSCATES_BNM(".(") +
-                myInfo->name + OBFUSCATES_BNM("){кол-во аргументов: ") +
+                myInfo->name + OBFUSCATES_BNM("){number of arguments: ") +
                 std::to_string(myInfo->parameters_count) + OBFUSCATES_BNM("}") +
-                (isStatic ? OBFUSCATE_BNM("(статический)") : OBFUSCATE_BNM(""));
+                (isStatic ? OBFUSCATE_BNM("(static)") : OBFUSCATE_BNM(""));
 #undef kls
         }
 #endif
@@ -692,9 +693,9 @@ namespace BNM {
         Method(const MethodBase &other) : MethodBase(other) {}
 
         // Fast set instance
-        inline Method<Ret> &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
-        inline Method<Ret> &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
-        inline Method<Ret> &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        inline Method<Ret> &operator[](void *val) override { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        inline Method<Ret> &operator[](IL2CPP::Il2CppObject *val) override { SetInstance(val); return *this;}
+        inline Method<Ret> &operator[](UnityEngine::Object *val) override { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
 
         // Call method
         template<typename ...Args>
@@ -752,19 +753,19 @@ namespace BNM {
 #ifdef BNM_ALLOW_STR_METHODS
         // Get info about property
         inline std::string str() const {
-            if (!hasGetter && !hasSetter) return OBFUSCATE_BNM("Мёртвое свойство");
+            if (!hasGetter && !hasSetter) return OBFUSCATE_BNM("Dead property");
             auto isStatic = hasGetter ? getter.isStatic : setter.isStatic;
             return LoadClass(myInfo->parent).str() + OBFUSCATES_BNM(" ") +
                 LoadClass(myInfo->parent).str() + OBFUSCATES_BNM(".(") +
-                ((Structures::Mono::monoString *)myInfo->name)->str() + OBFUSCATES_BNM("){метод получения: ") + (hasGetter ? OBFUSCATE_BNM("есть") : OBFUSCATES_BNM("нет")) + OBFUSCATES_BNM(", метод установки: ") + (hasSetter ? OBFUSCATE_BNM("есть") : OBFUSCATES_BNM("нет")) + OBFUSCATES_BNM("}") +
-                (isStatic ? OBFUSCATE_BNM("(статическое)") : OBFUSCATE_BNM(""));
+                ((Structures::Mono::monoString *)myInfo->name)->str() + OBFUSCATES_BNM("){obtaining method: ") + (hasGetter ? OBFUSCATE_BNM("there is") : OBFUSCATES_BNM("no")) + OBFUSCATES_BNM(", installation method: ") + (hasSetter ? OBFUSCATE_BNM("there is") : OBFUSCATES_BNM("no")) + OBFUSCATES_BNM("}") +
+                (isStatic ? OBFUSCATE_BNM("(static)") : OBFUSCATE_BNM(""));
         }
 #endif
 
         // Fast set instance
-        inline PropertyBase &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
-        inline PropertyBase &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
-        inline PropertyBase &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        virtual inline PropertyBase &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        virtual inline PropertyBase &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
+        virtual inline PropertyBase &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
 
         // Cast property
         template<typename NewRet> inline Property<NewRet> &cast() const { return (Property<NewRet> &)*this; }
@@ -779,14 +780,14 @@ namespace BNM {
         Property(const PropertyBase &other) : PropertyBase(other) {}
 
         // Fast set instance
-        inline Property<T> &operator[](void *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
-        inline Property<T> &operator[](IL2CPP::Il2CppObject *val) { SetInstance(val); return *this;}
-        inline Property<T> &operator[](UnityEngine::Object *val) { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        inline Property<T> &operator[](void *val) override { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
+        inline Property<T> &operator[](IL2CPP::Il2CppObject *val) override { SetInstance(val); return *this;}
+        inline Property<T> &operator[](UnityEngine::Object *val) override { SetInstance((IL2CPP::Il2CppObject *)val); return *this;}
 
         // Call getter
         inline T Get() const {
             if (hasGetter) return getter.cast<T>()();
-            BNM_LOG_ERR("Попытка вызвать свойство %s в котором отсутствует метод получения", str().c_str());
+            BNM_LOG_ERR("An attempt was made to call a property %s that does not have a obtaining method.", str().c_str());
             if constexpr (std::is_same_v<T, void>) return; else return {};
         }
         inline operator T() { return Get(); }
@@ -797,7 +798,7 @@ namespace BNM {
         // Call setter
         inline void Set(T v) const {
             if (hasSetter) return setter.cast<void>()(v);
-            BNM_LOG_ERR("Попытка вызвать свойство %s в котором отсутствует метод установки", str().c_str());
+            BNM_LOG_ERR("An attempt was made to call a property %s that does not have a setter method.", str().c_str());
         }
 
         inline Property<T> &operator=(T val) { Set(std::move(val)); return *this; }
@@ -903,50 +904,50 @@ namespace BNM {
             }
 #else
             struct Entry {
-                int hashCode{}, next{};
-                TKey key{};
-                TValue value{};
+                [[maybe_unused]] int hashCode{}, next{};
+                [[maybe_unused]] TKey key{};
+                [[maybe_unused]] TValue value{};
             };
-            monoArray<int> *buckets{};
-            monoArray<Entry> *entries{};
-            int count{};
-            int version{};
-            int freeList{};
-            int freeCount{};
-            void *comparer{};
-            monoArray<TKey> *keys{};
-            monoArray<TValue> *values{};
-            void *syncRoot{};
-            std::map<TKey, TValue> ToMap() const {
+            [[maybe_unused]] monoArray<int> *buckets{};
+            [[maybe_unused]] monoArray<Entry> *entries{};
+            [[maybe_unused]] int count{};
+            [[maybe_unused]] int version{};
+            [[maybe_unused]] int freeList{};
+            [[maybe_unused]] int freeCount{};
+            [[maybe_unused]] void *comparer{};
+            [[maybe_unused]] monoArray<TKey> *keys{};
+            [[maybe_unused]] monoArray<TValue> *values{};
+            [[maybe_unused]] void *syncRoot{};
+            [[maybe_unused]] std::map<TKey, TValue> ToMap() const {
                 std::map<TKey, TValue> ret{};
                 for (auto it = (Entry *)&entries->m_Items; it != ((Entry *)&entries->m_Items + count); ++it) ret.emplace(std::make_pair(it->key, it->value));
                 return ret;
             }
-            std::vector<TKey> GetKeys() const {
+            [[maybe_unused]] std::vector<TKey> GetKeys() const {
                 std::vector<TKey> ret{};
                 for (int i = 0; i < count; ++i) ret.emplace_back(entries->m_Items[i].key);
                 return ret;
             }
-            std::vector<TValue> GetValues() const {
+            [[maybe_unused]] std::vector<TValue> GetValues() const {
                 std::vector<TValue> ret{};
                 for (int i = 0; i < count; ++i) ret.emplace_back(entries->m_Items[i].value);
                 return ret;
             }
 #endif
-            int GetSize() const { return count; }
-            int GetVersion() const { return version; }
-            bool TryGet(TKey key, TValue *value) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("TryGetValue"), 2).template cast<bool>()[(void *)this](key, value); }
-            void Add(TKey key, TValue value) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("Add"), 2).template cast<void>()[(void *)this](key, value); }
-            void Insert(TKey key, TValue value) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("set_Item"), 2).template cast<void>()[(void *)this](key, value); }
-            bool Remove(TKey key) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("Remove"), 1).template cast<bool>()[(void *)this](key); }
-            bool ContainsKey(TKey key) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("ContainsKey"), 1).template cast<bool>()[(void *)this](key); }
-            bool ContainsValue(TValue value) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("ContainsValue"), 1).template cast<bool>()[(void *)this](value); }
-            TValue Get(TKey key) const {
+            [[maybe_unused]] int GetSize() const { return count; }
+            [[maybe_unused]] int GetVersion() const { return version; }
+            [[maybe_unused]] bool TryGet(TKey key, TValue *value) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("TryGetValue"), 2).template cast<bool>()[(void *)this](key, value); }
+            [[maybe_unused]] void Add(TKey key, TValue value) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("Add"), 2).template cast<void>()[(void *)this](key, value); }
+            [[maybe_unused]] void Insert(TKey key, TValue value) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("set_Item"), 2).template cast<void>()[(void *)this](key, value); }
+            [[maybe_unused]] bool Remove(TKey key) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("Remove"), 1).template cast<bool>()[(void *)this](key); }
+            [[maybe_unused]] bool ContainsKey(TKey key) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("ContainsKey"), 1).template cast<bool>()[(void *)this](key); }
+            [[maybe_unused]] bool ContainsValue(TValue value) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("ContainsValue"), 1).template cast<bool>()[(void *)this](value); }
+            [[maybe_unused]] TValue Get(TKey key) const {
                 TValue ret;
                 if (TryGet(key, &ret)) return ret;
                 return {};
             }
-            TValue operator[](TKey key) const { return Get(key); }
+            [[maybe_unused]] TValue operator[](TKey key) const { return Get(key); }
         };
     }
 
@@ -1192,8 +1193,8 @@ namespace BNM {
 #endif
 
     // Method for creating basic C# strings
-    Structures::Mono::monoString *CreateMonoString(const char *str);
-    Structures::Mono::monoString *CreateMonoString(const std::string_view &str);
+    [[maybe_unused]] Structures::Mono::monoString *CreateMonoString(const char *str);
+    [[maybe_unused]] Structures::Mono::monoString *CreateMonoString(const std::string_view &str);
 
     //  Get extern methods (icall)
     void *GetExternMethod(const std::string_view &str);
@@ -1203,61 +1204,61 @@ namespace BNM {
 
 #ifdef BNM_DEPRECATED
     // Il2cpp thread utils
-    bool AttachIl2Cpp();
-    IL2CPP::Il2CppThread *CurrentIl2CppThread();
-    void DetachIl2Cpp();
+    [[maybe_unused]] bool AttachIl2Cpp();
+    [[maybe_unused]] IL2CPP::Il2CppThread *CurrentIl2CppThread();
+    [[maybe_unused]] void DetachIl2Cpp();
 #endif
 
     // Get path to libil2cpp.so
-    std::string_view GetIl2CppLibraryPath();
+    [[maybe_unused]] std::string_view GetIl2CppLibraryPath();
 
     // Get offset of loaded libil2cpp.so
-    BNM_PTR GetIl2CppLibraryOffset();
+    [[maybe_unused]] BNM_PTR GetIl2CppLibraryOffset();
 
     // Don't close it! BNM will just crash without it.
-    void *GetIl2CppLibraryHandle();
+    [[maybe_unused]] void *GetIl2CppLibraryHandle();
 
     // Unbox object just copy of il2cpp method
     template<typename T>
-    static T UnboxObject(T obj) { return (T)(void *)(((char *)obj) + sizeof(BNM::IL2CPP::Il2CppObject)); }
+    [[maybe_unused]] static T UnboxObject(T obj) { return (T)(void *)(((char *)obj) + sizeof(BNM::IL2CPP::Il2CppObject)); }
 
     // Hook method by changing MethodInfo
-    bool InvokeHookImpl(IL2CPP::MethodInfo *m, void *newMet, void **oldMet);
+    [[maybe_unused]] bool InvokeHookImpl(IL2CPP::MethodInfo *m, void *newMet, void **oldMet);
 
     template<typename T_NEW, typename T_OLD>
-    bool InvokeHook(const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &oldMet) {
+    [[maybe_unused]] bool InvokeHook(const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &oldMet) {
         if (targetMethod.Initialized()) return InvokeHookImpl(targetMethod.myInfo, (void *)newMet, (void **)&oldMet);
         return false;
     }
     template<typename T_NEW, typename T_OLD>
-    bool InvokeHook(const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &&oldMet) {
+    [[maybe_unused]] bool InvokeHook(const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &&oldMet) {
         if (targetMethod.Initialized()) return InvokeHookImpl(targetMethod.myInfo, (void *)newMet, (void **)&oldMet);
         return false;
     }
     template<typename T_NEW, typename T_OLD>
-    bool InvokeHook(IL2CPP::MethodInfo *m, T_NEW newMet, T_OLD &oldMet) { return InvokeHookImpl(m, (void *)newMet, (void **)&oldMet); }
+    [[maybe_unused]] bool InvokeHook(IL2CPP::MethodInfo *m, T_NEW newMet, T_OLD &oldMet) { return InvokeHookImpl(m, (void *)newMet, (void **)&oldMet); }
     template<typename T_NEW, typename T_OLD>
-    bool InvokeHook(IL2CPP::MethodInfo *m, T_NEW newMet, T_OLD &&oldMet) { return InvokeHookImpl(m, (void *)newMet, (void **)&oldMet); }
+    [[maybe_unused]] bool InvokeHook(IL2CPP::MethodInfo *m, T_NEW newMet, T_OLD &&oldMet) { return InvokeHookImpl(m, (void *)newMet, (void **)&oldMet); }
 
     // Hook method by changing the table of virtual methods of a class
-    bool VirtualHookImpl(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, void *newMet, void **oldMet);
+    [[maybe_unused]] bool VirtualHookImpl(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, void *newMet, void **oldMet);
 
     template<typename T_NEW, typename T_OLD>
-    bool VirtualHook(BNM::LoadClass targetClass, const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &oldMet) {
+    [[maybe_unused]] bool VirtualHook(BNM::LoadClass targetClass, const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &oldMet) {
         if (targetClass && targetMethod.Initialized()) return VirtualHookImpl(targetClass, targetMethod.myInfo, (void *)newMet, (void **)&oldMet);
         return false;
     }
     template<typename T_NEW, typename T_OLD>
-    bool VirtualHook(BNM::LoadClass targetClass, const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &&oldMet) {
+    [[maybe_unused]] bool VirtualHook(BNM::LoadClass targetClass, const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &&oldMet) {
         if (targetClass && targetMethod.Initialized()) return VirtualHookImpl(targetClass, targetMethod.myInfo, (void *)newMet, (void **)&oldMet);
         return false;
     }
     template<typename T_NEW, typename T_OLD>
-    bool VirtualHook(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, T_NEW newMet, T_OLD &oldMet) {
+    [[maybe_unused]] bool VirtualHook(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, T_NEW newMet, T_OLD &oldMet) {
         return VirtualHookImpl(targetClass, m, (void *)newMet, (void **)&oldMet);
     }
     template<typename T_NEW, typename T_OLD>
-    bool VirtualHook(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, T_NEW newMet, T_OLD &&oldMet) {
+    [[maybe_unused]] bool VirtualHook(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, T_NEW newMet, T_OLD &&oldMet) {
         return VirtualHookImpl(targetClass, m, (void *)newMet, (void **)&oldMet);
     }
 
@@ -1276,27 +1277,27 @@ namespace BNM {
     template<typename NEW_T, typename T_OLD>
     void HOOK(const BNM::MethodBase &targetMethod, NEW_T newMethod, T_OLD &oldBytes) {
         if (targetMethod.Initialized()) ::HOOK<void *, NEW_T, T_OLD>((void *) targetMethod.myInfo->methodPointer, newMethod, oldBytes);
-    };
+    }
     template<typename NEW_T, typename T_OLD>
     void HOOK(const BNM::MethodBase &targetMethod, NEW_T newMethod, T_OLD &&oldBytes) {
         if (targetMethod.Initialized()) ::HOOK<void *, NEW_T, T_OLD>((void *) targetMethod.myInfo->methodPointer, newMethod, oldBytes);
-    };
+    }
     // Try to preload the library by getting the full path to it (INTERNAL USE ONLY)
-    void TryForceLoadIl2CppByPath(JNIEnv *env, jobject context = nullptr);
+    [[maybe_unused]] void TryForceLoadIl2CppByPath(JNIEnv *env, jobject context = nullptr);
     namespace External {
-        bool TryInitHandle(void *handle, const char *path = nullptr, bool external = true);
+        [[maybe_unused]] bool TryInitHandle(void *handle, const char *path = nullptr, bool external = true);
         // Try load BNM if you externally load BNM
         // Need call this from any unity thread
         // handle - handle of loaded libil2cpp.so
-        void TryLoad(void *handle);
+        [[maybe_unused]] void TryLoad(void *handle);
         // Set handle of libil2cpp.so without checking it and try load BNM
         // GetLibIl2CppOffset and GetLibIl2CppPath will be empty
         // Need call this from any unity thread
         // handle - handle of loaded libil2cpp.so
-        void ForceLoad(void *handle);
+        [[maybe_unused]] void ForceLoad(void *handle);
     }
-    void AddOnLoadedEvent(void (*event)());
-    void ClearOnLoadedEvents();
+    [[maybe_unused]] void AddOnLoadedEvent(void (*event)());
+    [[maybe_unused]] void ClearOnLoadedEvents();
 
 #ifdef BNM_DEBUG
     namespace Utils {
@@ -1306,7 +1307,7 @@ namespace BNM {
 #endif
 
     namespace Zygisk {
-        void LoadKittyMemory(ElfScanner ilcppScan);
+        [[maybe_unused]] void LoadKittyMemory(ElfScanner ilcppScan);
     }
 }
 #define InitResolveFunc(x, y) BNM::InitFunc(x, BNM::GetExternMethod(y))

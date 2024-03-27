@@ -122,7 +122,7 @@ namespace BNM_Internal {
     bool InitLibraryHandle(void *handle, const char *path = nullptr, bool external = false);
 
     namespace Zygisk {
-        void LoadKittyMemory(ElfScanner ilcppScan);
+        [[maybe_unused]] void LoadKittyMemory(ElfScanner ilcppScan);
     }
 
     // Methods for converting C# strings (monoString)
@@ -203,18 +203,18 @@ namespace BNM {
     bool IsLoaded() { return BNM_Internal::bnmLoaded; }
 
     namespace Structures::Mono {
-        void *CompareExchange4List(void *syncRoot) {  // The only normal way to call CompareExchange for syncRoot for monoList
+        [[maybe_unused]] void *CompareExchange4List(void *syncRoot) {  // The only normal way to call CompareExchange for syncRoot for monoList
             if (BNM_Internal::vmData.Interlocked$$CompareExchange) BNM_Internal::vmData.Interlocked$$CompareExchange((void **)&syncRoot, (void *)BNM_Internal::vmData.Object.CreateNewInstance(), (void *)nullptr);
             return syncRoot;
         }
 
-        std::string monoString::str() {
+        [[maybe_unused]] std::string monoString::str() {
             BNM_CHECK_SELF("ERROR: monoString dead");
             if (!length) return {};
             return BNM_Internal::Utf16ToUtf8(chars, length);
         }
 
-        unsigned int monoString::GetHash() const {
+        [[maybe_unused]] unsigned int monoString::GetHash() const {
             BNM_CHECK_SELF(0);
             const IL2CPP::Il2CppChar *p = chars;
             unsigned int h = 0;
@@ -223,7 +223,7 @@ namespace BNM {
         }
 
         // Create basic C# string like il2cpp
-        monoString *monoString::Create(const char *str) {
+        [[maybe_unused]] monoString *monoString::Create(const char *str) {
             const size_t length = strlen(str);
             const size_t utf16Size = sizeof(IL2CPP::Il2CppChar) * length;
             auto ret = (monoString *) malloc(sizeof(monoString) + utf16Size);
@@ -235,9 +235,9 @@ namespace BNM {
             if (empty) ret->klass = empty->klass;
             return (monoString *)ret;
         }
-        monoString *monoString::Create(const std::string &str) { return Create(str.c_str()); }
+        [[maybe_unused]] monoString *monoString::Create(const std::string &str) { return Create(str.c_str()); }
 
-        monoString *monoString::Empty() {
+        [[maybe_unused]] monoString *monoString::Empty() {
             if (!BNM_Internal::vmData.String$$Empty) return {};
             return *BNM_Internal::vmData.String$$Empty;
         }
@@ -320,7 +320,7 @@ namespace BNM {
         *this = LoadClass(namespaze, name, BNM_Internal::il2cppMethods.il2cpp_assembly_get_image(assembly));
     }
 
-    std::vector<LoadClass> LoadClass::GetInnerClasses(bool includeParent) const {
+    [[maybe_unused]] std::vector<LoadClass> LoadClass::GetInnerClasses(bool includeParent) const {
         if (!klass) return {};
         TryInit();
         std::vector<LoadClass> ret{};
@@ -366,7 +366,7 @@ namespace BNM {
         return std::move(ret);
     }
 
-    std::vector<PropertyBase> LoadClass::GetProperties(bool includeParent) const {
+    [[maybe_unused]] std::vector<PropertyBase> LoadClass::GetProperties(bool includeParent) const {
         if (!klass) return {};
         TryInit();
         std::vector<PropertyBase> ret{};
@@ -684,7 +684,7 @@ namespace BNM {
         return *this;
     }
 
-    IL2CPP::FieldInfo *FieldBase::GetInfo() const {
+    [[maybe_unused]] IL2CPP::FieldInfo *FieldBase::GetInfo() const {
         if (init) return myInfo;
         return {};
     }
@@ -755,13 +755,13 @@ namespace BNM {
         return {};
     }
 
-    MethodBase MethodBase::GetGeneric(const std::vector<RuntimeTypeGetter> &templateTypes) const {
+    [[maybe_unused]] MethodBase MethodBase::GetGeneric(const std::vector<RuntimeTypeGetter> &templateTypes) const {
         BNM_LOG_WARN_IF(!myInfo->is_generic, "%s method is not generic!", str().c_str());
         if (!myInfo->is_generic) return {};
         return BNM_Internal::TryMakeGenericMethod(*this, templateTypes);
     }
 
-    MethodBase MethodBase::Virtualize() const {
+    [[maybe_unused]] MethodBase MethodBase::Virtualize() const {
         if (!init || isStatic) return {};
         if (!BNM::CheckObj(instance)) {
             BNM_LOG_WARN("Failed to get virtual version of %s method - the object is not set", str().c_str());
@@ -833,56 +833,56 @@ namespace BNM {
     }
 
 #ifdef BNM_DEPRECATED
-    bool AttachIl2Cpp() {
+    [[maybe_unused]] bool AttachIl2Cpp() {
         if (CurrentIl2CppThread()) return false;
         BNM_Internal::il2cppMethods.il2cpp_thread_attach(BNM_Internal::il2cppMethods.il2cpp_domain_get());
         return true;
     }
 
-    IL2CPP::Il2CppThread *CurrentIl2CppThread() {
+    [[maybe_unused]] IL2CPP::Il2CppThread *CurrentIl2CppThread() {
         return BNM_Internal::il2cppMethods.il2cpp_thread_current();
     }
 
-    void DetachIl2Cpp() {
+    [[maybe_unused]] void DetachIl2Cpp() {
         auto thread = CurrentIl2CppThread();
         if (!thread) return;
         BNM_Internal::il2cppMethods.il2cpp_thread_detach(thread);
     }
 #endif
     // Create basic C# string using il2cpp
-    Structures::Mono::monoString *CreateMonoString(const char *str) {
+    [[maybe_unused]] Structures::Mono::monoString *CreateMonoString(const char *str) {
         return BNM_Internal::il2cppMethods.il2cpp_string_new(str);
     }
-    Structures::Mono::monoString *CreateMonoString(const std::string_view &str) { return CreateMonoString(str.data()); }
+    [[maybe_unused]] Structures::Mono::monoString *CreateMonoString(const std::string_view &str) { return CreateMonoString(str.data()); }
 
-    void *GetExternMethod(const std::string_view &str) {
+    [[maybe_unused]] void *GetExternMethod(const std::string_view &str) {
         auto c_str = str.data();
         auto ret = BNM_Internal::il2cppMethods.il2cpp_resolve_icall(c_str);
         BNM_LOG_WARN_IF(!ret, "Extern method %s not found. Please check code.", c_str);
         return ret;
     }
 
-    std::string_view GetIl2CppLibraryPath() {
+    [[maybe_unused]] std::string_view GetIl2CppLibraryPath() {
         if (!BNM_Internal::il2cppLibraryHandle) return {};
         return BNM_Internal::il2cppLibraryAbsolutePath;
     }
 
-    BNM_PTR GetIl2CppLibraryOffset() {
+    [[maybe_unused]] BNM_PTR GetIl2CppLibraryOffset() {
         return BNM_Internal::il2cppLibraryAbsoluteAddress;
     }
 
-    void *GetIl2CppLibraryHandle() {
+    [[maybe_unused]] void *GetIl2CppLibraryHandle() {
         return BNM_Internal::il2cppLibraryHandle;
     }
 
-    bool InvokeHookImpl(IL2CPP::MethodInfo *m, void *newMet, void **oldMet) {
+    [[maybe_unused]] bool InvokeHookImpl(IL2CPP::MethodInfo *m, void *newMet, void **oldMet) {
         if (!m) return false;
         if (oldMet) *oldMet = (void *) m->methodPointer;
         m->methodPointer = (IL2CPP::Il2CppMethodPointer) newMet;
         return true;
     }
 
-    bool VirtualHookImpl(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, void *newMet, void **oldMet) {
+    [[maybe_unused]] bool VirtualHookImpl(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, void *newMet, void **oldMet) {
         if (!m || !targetClass) return false;
         uint16_t i = 0;
         NEXT:
@@ -913,7 +913,7 @@ namespace BNM {
         return false;
     }
 
-    template<> bool IsA<IL2CPP::Il2CppObject *>(IL2CPP::Il2CppObject *object, IL2CPP::Il2CppClass *klass) {
+    template<> [[maybe_unused]] bool IsA<IL2CPP::Il2CppObject *>(IL2CPP::Il2CppObject *object, IL2CPP::Il2CppClass *klass) {
         if (!object || !klass) return false;
         for (auto cls = object->klass; cls; cls = cls->parent) if (cls == klass) return true;
         return false;
@@ -1048,7 +1048,8 @@ namespace BNM {
 #elif defined(__riscv)
 #    define CURRENT_ARCH "riscv64"
 #endif
-    void TryForceLoadIl2CppByPath(JNIEnv *env, jobject context) {
+
+    [[maybe_unused]] void TryForceLoadIl2CppByPath(JNIEnv *env, jobject context) {
         if (!env || BNM_Internal::il2cppLibraryHandle || BNM_Internal::bnmLoaded) return;
 
         // Get the path to libil2cpp.so using JNI
@@ -1109,11 +1110,11 @@ namespace BNM {
     }
 #undef CURRENT_ARCH
     namespace External {
-        bool TryInitHandle(void *handle, const char *path, bool external) {
+        [[maybe_unused]] bool TryInitHandle(void *handle, const char *path, bool external) {
             return BNM_Internal::InitLibraryHandle(handle, path, external);
         }
 
-        void TryLoad(void *handle) {
+        [[maybe_unused]] void TryLoad(void *handle) {
             if (BNM_Internal::InitLibraryHandle(handle, nullptr, true)) {
                 BNM_Internal::SetupBNM();
 #if !BNM_DISABLE_NEW_CLASSES
@@ -1124,7 +1125,7 @@ namespace BNM {
             } else BNM_LOG_WARN("[External::LoadBNM] handle is dead or incorrect, BNM is not loaded!");
         }
 
-        void ForceLoad(void *handle) {
+        [[maybe_unused]] void ForceLoad(void *handle) {
             BNM_Internal::il2cppLibraryHandle = handle; // Forcibly set handle
             BNM_Internal::SetupBNM();
 #if !BNM_DISABLE_NEW_CLASSES
@@ -1135,11 +1136,11 @@ namespace BNM {
         }
     }
 
-    void AddOnLoadedEvent(void (*event)()) {
+    [[maybe_unused]] void AddOnLoadedEvent(void (*event)()) {
         if (event) BNM_Internal::onIl2CppLoaded.push_back(event);
     }
 
-    void ClearOnLoadedEvents() {
+    [[maybe_unused]] void ClearOnLoadedEvents() {
         BNM_Internal::onIl2CppLoaded.clear();
     }
 
@@ -1152,6 +1153,16 @@ namespace BNM {
         }
     }
 #endif
+
+    namespace Zygisk {
+        void LoadKittyMemory(ElfScanner ilcppScan) {
+            BNM_Internal::Zygisk::LoadKittyMemory(ilcppScan);
+#if !BNM_DISABLE_NEW_CLASSES
+            BNM_Internal::InitNewClasses();
+            BNM_Internal::ModifyClasses();
+#endif
+        }
+    }
 
 }
 namespace BNM_Internal {
@@ -1567,7 +1578,7 @@ namespace BNM_Internal {
 #undef kls
 
                     newMethods[oldCount] = method->myInfo;
-                    BNM_LOG_DEBUG("[ModifyClasses] Added %smethod %s %d to %s.", (info.isStatic == 1) ? "статический " : "", info.name.data(), info.argumentsCount, lc.str().c_str());
+                    BNM_LOG_DEBUG("[ModifyClasses] Added %s method %s %d to %s.", (info.isStatic == 1) ? "static " : "", info.name.data(), info.argumentsCount, lc.str().c_str());
                 }
 
                 klass->methods = (const IL2CPP::MethodInfo **)newMethods;
@@ -1618,7 +1629,7 @@ namespace BNM_Internal {
                 klass->fields = newFields;
                 klass->field_count += newFieldsCount;
 
-                // Увеличить размер класса
+                // Increase class size
                 klass->instance_size = (uint32_t) currentAddress;
             }
 
@@ -1665,7 +1676,7 @@ namespace BNM_Internal {
 
                 // If it exists, warn and set class and type
                 if (existLS) {
-                    BNM_LOG_WARN("Класс %s уже существует, он не может быть добавлен в il2cpp! Пожалуйста, проверьте код.", existLS.str().c_str());
+                    BNM_LOG_WARN("Class %s already exists, it cannot be added to il2cpp! Please check the code.", existLS.str().c_str());
                     // In case
                     klass->myClass = existLS.klass;
                     klass->type = existLS;
@@ -2052,7 +2063,7 @@ namespace BNM_Internal {
 #endif
 
         //! il2cpp::vm::Class::Init
-        // Путь:
+        // Path:
         // il2cpp_array_new_specific ->
         // il2cpp::vm::Array::NewSpecific ->
         // il2cpp::vm::Class::Init
@@ -2265,7 +2276,7 @@ namespace BNM_Internal {
 #endif
 
         //! il2cpp::vm::Class::Init
-        // Путь:
+        // Path:
         // il2cpp_array_new_specific ->
         // il2cpp::vm::Array::NewSpecific ->
         // il2cpp::vm::Class::Init
@@ -2514,7 +2525,7 @@ namespace BNM_Internal {
     }
 
     namespace Zygisk {
-    void LoadKittyMemory(ElfScanner ilcppScan) {
+    [[maybe_unused]] void LoadKittyMemory(ElfScanner ilcppScan) {
             BNM_Internal::il2cppLibraryAbsolutePath = ilcppScan.filePath().c_str();
             BNM_Internal::il2cppLibraryAbsoluteAddress = (BNM_PTR) ilcppScan.base();
             BNM_Internal::SetupBNMKittyMemory(ilcppScan);
@@ -2524,7 +2535,7 @@ namespace BNM_Internal {
 }
 
 namespace BNM::Structures::Unity {
-    void *RaycastHit::GetCollider() const {
+    [[maybe_unused]] void *RaycastHit::GetCollider() const {
         if (!m_Collider || (BNM_PTR) m_Collider < 0) return {};
 #if UNITY_VER > 174
         static void * (*FromId)(int);
@@ -2534,25 +2545,25 @@ namespace BNM::Structures::Unity {
         return m_Collider;
 #endif
     }
-    const float Vector4::infinity = std::numeric_limits<float>::infinity();
-    const Vector4 Vector4::infinityVec = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
-    const Vector4 Vector4::zero = {0, 0, 0, 0};
-    const Vector4 Vector4::one = {1, 1, 1, 1};
-    const Vector3 Vector3::back = {0.f, 0.f, -1.f};
-    const Vector3 Vector3::down = {0.f, -1.f, 0.f};
-    const Vector3 Vector3::forward = {0.f, 0.f, 1.f};
-    const float Vector3::kEpsilon = 1E-05f;
-    const float Vector3::kEpsilonNormalSqrt = 1E-15f;
-    const Vector3 Vector3::left = {-1.f, 0.f, 0.f};
-    const Vector3 Vector3::negativeInfinity = {-INFINITY, -INFINITY, -INFINITY};
-    const Vector3 Vector3::one = {1.f, 1.f, 1.f};
-    const Vector3 Vector3::positiveInfinity = {INFINITY, INFINITY, INFINITY};
-    const Vector3 Vector3::right = {1.f, 0.f, 0.f};
-    const Vector3 Vector3::up = {0.f, 1.f, 0.f};
-    const Vector3 Vector3::zero = {0.f, 0.f, 0.f};
-    const Matrix4x4 Matrix4x4::identity(kIdentity);
+    [[maybe_unused]] const float Vector4::infinity = std::numeric_limits<float>::infinity();
+    [[maybe_unused]] const Vector4 Vector4::infinityVec = {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()};
+    [[maybe_unused]] const Vector4 Vector4::zero = {0, 0, 0, 0};
+    [[maybe_unused]] const Vector4 Vector4::one = {1, 1, 1, 1};
+    [[maybe_unused]] const Vector3 Vector3::back = {0.f, 0.f, -1.f};
+    [[maybe_unused]] const Vector3 Vector3::down = {0.f, -1.f, 0.f};
+    [[maybe_unused]] const Vector3 Vector3::forward = {0.f, 0.f, 1.f};
+    [[maybe_unused]] const float Vector3::kEpsilon = 1E-05f;
+    [[maybe_unused]] const float Vector3::kEpsilonNormalSqrt = 1E-15f;
+    [[maybe_unused]] const Vector3 Vector3::left = {-1.f, 0.f, 0.f};
+    [[maybe_unused]] const Vector3 Vector3::negativeInfinity = {-INFINITY, -INFINITY, -INFINITY};
+    [[maybe_unused]] const Vector3 Vector3::one = {1.f, 1.f, 1.f};
+    [[maybe_unused]] const Vector3 Vector3::positiveInfinity = {INFINITY, INFINITY, INFINITY};
+    [[maybe_unused]] const Vector3 Vector3::right = {1.f, 0.f, 0.f};
+    [[maybe_unused]] const Vector3 Vector3::up = {0.f, 1.f, 0.f};
+    [[maybe_unused]] const Vector3 Vector3::zero = {0.f, 0.f, 0.f};
+    [[maybe_unused]] const Matrix4x4 Matrix4x4::identity(kIdentity);
 
-    Matrix3x3& Matrix3x3::operator=(const Matrix4x4& other) {
+    [[maybe_unused]] Matrix3x3& Matrix3x3::operator=(const Matrix4x4& other) {
         m_Data[0] = other.m_Data[0];
         m_Data[1] = other.m_Data[1];
         m_Data[2] = other.m_Data[2];
@@ -2564,7 +2575,7 @@ namespace BNM::Structures::Unity {
         m_Data[8] = other.m_Data[10];
         return *this;
     }
-    Matrix3x3::Matrix3x3(const Matrix4x4& other) {
+    [[maybe_unused]] Matrix3x3::Matrix3x3(const Matrix4x4& other) {
         m_Data[0] = other.m_Data[0];
         m_Data[1] = other.m_Data[1];
         m_Data[2] = other.m_Data[2];
@@ -2575,7 +2586,7 @@ namespace BNM::Structures::Unity {
         m_Data[7] = other.m_Data[9];
         m_Data[8] = other.m_Data[10];
     }
-    Matrix3x3& Matrix3x3::operator*=(const Matrix4x4& inM) {
+    [[maybe_unused]] Matrix3x3& Matrix3x3::operator*=(const Matrix4x4& inM) {
         for (int i = 0; i < 3; i++) {
             float v[3] = {Get(i, 0), Get(i, 1), Get(i, 2)};
             Get(i, 0) = v[0] * inM.Get(0, 0) + v[1] * inM.Get(1, 0) + v[2] * inM.Get(2, 0);
@@ -2584,13 +2595,13 @@ namespace BNM::Structures::Unity {
         }
         return *this;
     }
-    bool Matrix3x3::Invert() {
+    [[maybe_unused]] bool Matrix3x3::Invert() {
         Matrix4x4 m = *this;
         bool success = InvertMatrix4x4_Full(m.GetPtr(), m.GetPtr());
         *this = m;
         return success;
     }
-    Vector2::operator Vector3() const {
+    [[maybe_unused]] Vector2::operator Vector3() const {
         return {x, y, 0};
     }
 }

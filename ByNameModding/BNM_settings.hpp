@@ -57,7 +57,7 @@ static_assert(false, "ByNameModding requre C++20 and upper!");
 //! Use signal in IsAllocated
 #define BNM_ALLOW_SAFE_IS_ALLOCATED
 
-//! Проверять объекты MONO_STRUCTS в их методах
+//! Check MONO_STRUCTS objects in their methods
 #define BNM_ALLOW_SELF_CHECKS
 
 #define BNM_DEBUG
