@@ -2512,14 +2512,14 @@ namespace BNM_Internal {
         il2cppLibraryHandle = handle;
         return true;
     }
-}
 
-namespace Zygisk {
+    namespace Zygisk {
     void LoadKittyMemory(ElfScanner ilcppScan) {
-        BNM_Internal::il2cppLibraryAbsolutePath = ilcppScan.filePath().c_str();
-        BNM_Internal::il2cppLibraryAbsoluteAddress = (BNM_PTR) ilcppScan.base();
-        BNM_Internal::SetupBNMKittyMemory(ilcppScan);
-        bnmLoaded = true;
+            BNM_Internal::il2cppLibraryAbsolutePath = ilcppScan.filePath().c_str();
+            BNM_Internal::il2cppLibraryAbsoluteAddress = (BNM_PTR) ilcppScan.base();
+            BNM_Internal::SetupBNMKittyMemory(ilcppScan);
+            bnmLoaded = true;
+        }
     }
 }
 
