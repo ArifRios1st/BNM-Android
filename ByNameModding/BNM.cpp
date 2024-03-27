@@ -10,6 +10,8 @@
 #include "BNM.hpp"
 #include "BNM_data/utf8.h"
 
+std::vector<HookData> hookDatas;
+
 namespace BNM_Internal {
     using namespace BNM;
     using namespace Structures;

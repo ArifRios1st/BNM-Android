@@ -107,17 +107,42 @@ inline void HOOK(PTR_T ptr, NEW_T newMethod, OLD_T&& oldBytes) {
 //! DobbyHook
 //!!!!!!!! Recommended !!!!!!!!
 #include <dobby.h>
+#include <vector>
+
+struct HookData {
+    void* ptr;
+    void* newMethod;
+    void** oldBytes;
+};
+
+extern std::vector<HookData> hookDatas;
 
 template<typename PTR_T, typename NEW_T, typename T_OLD>
 inline void HOOK(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) {
-    if (((void *)ptr) != nullptr)
+    if (((void *)ptr) != nullptr){
         DobbyHook((void *)ptr, (void *) newMethod, (void **) &oldBytes);
+        hookDatas.push_back({(void *)ptr, (void *) newMethod, (void **) &oldBytes});
+    }
 }
 template<typename PTR_T, typename NEW_T, typename T_OLD>
 inline void HOOK(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
-    if (((void *)ptr) != nullptr)
+    if (((void *)ptr) != nullptr){
         DobbyHook((void *)ptr, (void *) newMethod, (void **) &oldBytes);
+        hookDatas.push_back({(void *)ptr, (void *) newMethod, (void **) &oldBytes});
+    }
 }
+template<typename PTR_T, typename OLD_T>
+inline void UNHOOK(PTR_T ptr, OLD_T oldMethod) {
+    if (((void *)ptr) != nullptr && ((void *)oldMethod) != nullptr)
+        DobbyHook((void *)ptr, (void *) oldMethod, nullptr);
+}
+inline void UNHOOK() {
+    for (const HookData &hookData : hookDatas)
+        UNHOOK(hookData.ptr,hookData.oldBytes);
+    
+    hookDatas.clear();
+}
+
 
 // If you need hide dl calls or use custom dl for external BNM initialization
 #define BNM_dlopen dlopen
