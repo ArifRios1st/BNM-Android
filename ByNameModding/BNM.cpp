@@ -119,6 +119,10 @@ namespace BNM_Internal {
 
     bool InitLibraryHandle(void *handle, const char *path = nullptr, bool external = false);
 
+    namespace Zygisk {
+        void LoadKittyMemory(ElfScanner ilcppScan);
+    }
+
     // Methods for converting C# strings (monoString)
     typedef std::basic_string<IL2CPP::Il2CppChar> string16;
     std::string Utf16ToUtf8(IL2CPP::Il2CppChar *utf16String, size_t length) {
@@ -2250,6 +2254,219 @@ namespace BNM_Internal {
         customListTemplateClass = listClass;
     }
 
+    void SetupBNMKittyMemory(ElfScanner il2cppScan) {
+#if defined(__ARM_ARCH_7A__) || defined(__aarch64__)
+        int count = 1;
+#elif defined(__i386__) || defined(__x86_64__)
+        // x86 имеет один вызов до кода метода
+        int count = 2;
+#endif
+
+        //! il2cpp::vm::Class::Init
+        // Путь:
+        // il2cpp_array_new_specific ->
+        // il2cpp::vm::Array::NewSpecific ->
+        // il2cpp::vm::Class::Init
+        Class$$Init = (decltype(Class$$Init)) HexUtils::FindNextJump(HexUtils::FindNextJump((BNM_PTR) il2cppScan.findSymbol(OBFUSCATE_BNM("il2cpp_array_new_specific")), count), count);
+        BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::Class::Init in lib: %p.", Utils::OffsetInLib((void *)Class$$Init));
+
+
+#define INIT_IL2CPP_API(name) il2cppMethods.name = (decltype(il2cppMethods.name)) il2cppScan.findSymbol(OBFUSCATE_BNM(#name))
+
+        INIT_IL2CPP_API(il2cpp_image_get_class);
+        INIT_IL2CPP_API(il2cpp_get_corlib);
+        INIT_IL2CPP_API(il2cpp_class_from_name);
+        INIT_IL2CPP_API(il2cpp_assembly_get_image);
+        INIT_IL2CPP_API(il2cpp_image_get_class);
+        INIT_IL2CPP_API(il2cpp_method_get_param_name);
+        INIT_IL2CPP_API(il2cpp_class_from_il2cpp_type);
+        INIT_IL2CPP_API(il2cpp_array_class_get);
+        INIT_IL2CPP_API(il2cpp_type_get_object);
+        INIT_IL2CPP_API(il2cpp_object_new);
+        INIT_IL2CPP_API(il2cpp_value_box);
+        INIT_IL2CPP_API(il2cpp_array_new);
+        INIT_IL2CPP_API(il2cpp_field_static_get_value);
+        INIT_IL2CPP_API(il2cpp_field_static_set_value);
+        INIT_IL2CPP_API(il2cpp_string_new);
+        INIT_IL2CPP_API(il2cpp_resolve_icall);
+
+#ifdef BNM_DEPRECATED
+        INIT_IL2CPP_API(il2cpp_domain_get);
+        INIT_IL2CPP_API(il2cpp_thread_attach);
+        INIT_IL2CPP_API(il2cpp_thread_current);
+        INIT_IL2CPP_API(il2cpp_thread_detach);
+#endif
+#undef INIT_IL2CPP_API
+        //! il2cpp::vm::Image::GetTypes
+        if (il2cppMethods.il2cpp_image_get_class == nullptr) {
+            auto assemblyClass = il2cppMethods.il2cpp_class_from_name(il2cppMethods.il2cpp_get_corlib(), OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("Assembly"));
+            BNM_PTR GetTypesAdr = LoadClass(assemblyClass).GetMethodByName(OBFUSCATE_BNM("GetTypes"), 1).GetOffset();
+            const int sCount
+#if UNITY_VER >= 211
+                    = count;
+#elif UNITY_VER > 174
+            = count + 1;
+#else
+            = count + 2;
+#endif
+            // Path:
+            // System.Reflection.Assembly.GetTypes(bool) ->
+            // il2cpp::icalls::mscorlib::System::Reflection::Assembly::GetTypes ->
+            // il2cpp::icalls::mscorlib::System::Module::InternalGetTypes ->
+            // il2cpp::vm::Image::GetTypes
+            orig_Image$$GetTypes = (decltype(orig_Image$$GetTypes)) HexUtils::FindNextJump(HexUtils::FindNextJump(HexUtils::FindNextJump(GetTypesAdr, count), sCount), count);
+
+            BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::Image::GetTypes in lib: %p.", Utils::OffsetInLib((void *)orig_Image$$GetTypes));
+        } else {
+            BNM_LOG_DEBUG("[SetupBNM] code has il2cpp_image_get_class. BNM will use it.");
+        }
+#if !BNM_DISABLE_NEW_CLASSES
+
+        //! il2cpp::vm::Class::FromIl2CppType
+        // Path:
+        // il2cpp_class_from_type ->
+        // il2cpp::vm::Class::FromIl2CppType
+        auto from_type_adr = HexUtils::FindNextJump((BNM_PTR) il2cppScan.findSymbol(OBFUSCATE_BNM("il2cpp_class_from_type")), count);
+        HOOK(from_type_adr, Class$$FromIl2CppType, old_Class$$FromIl2CppType);
+        BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::Class::FromIl2CppType in lib: %p.", Utils::OffsetInLib((void *)from_type_adr));
+        
+
+        //! il2cpp::vm::Type::GetClassOrElementClass
+        // Path:
+        // il2cpp_type_get_class_or_element_class ->
+        // il2cpp::vm::Type::GetClassOrElementClass
+        auto type_get_class_adr = HexUtils::FindNextJump((BNM_PTR) il2cppScan.findSymbol(OBFUSCATE_BNM("il2cpp_type_get_class_or_element_class")), count);
+        HOOK(type_get_class_adr, Type$$GetClassOrElementClass, old_Type$$GetClassOrElementClass);
+        BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::Type::GetClassOrElementClass in lib: %p.", Utils::OffsetInLib((void *)type_get_class_adr));
+
+        //! il2cpp::vm::Image::ClassFromName
+        // Path:
+        // il2cpp_class_from_name ->
+        // il2cpp::vm::Class::FromName ->
+        // il2cpp::vm::Image::ClassFromName
+        auto from_name_adr = HexUtils::FindNextJump(HexUtils::FindNextJump((BNM_PTR) il2cppMethods.il2cpp_class_from_name, count), count);
+        HOOK(from_name_adr, Class$$FromName, old_Class$$FromName);
+        BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::Image::FromName in lib: %p.", Utils::OffsetInLib((void *)from_name_adr));
+#if UNITY_VER <= 174
+
+        //! il2cpp::vm::MetadataCache::GetImageFromIndex
+        // Path:
+        // il2cpp_assembly_get_image ->
+        // il2cpp::vm::Assembly::GetImage ->
+        // il2cpp::vm::MetadataCache::GetImageFromIndex
+        auto GetImageFromIndexOffset = HexUtils::FindNextJump(HexUtils::FindNextJump((BNM_PTR) il2cppMethods.il2cpp_assembly_get_image, count), count);
+        HOOK(GetImageFromIndexOffset, new_GetImageFromIndex, old_GetImageFromIndex);
+        BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::MetadataCache::GetImageFromIndex in lib: %p.", Utils::OffsetInLib((void *)GetImageFromIndexOffset));
+
+        //! il2cpp::vm::Assembly::Load
+        // Path:
+        // il2cpp_domain_assembly_open ->
+        // il2cpp::vm::Assembly::Load
+        BNM_PTR AssemblyLoadOffset = HexUtils::FindNextJump((BNM_PTR)il2cppScan.findSymbol(OBFUSCATE_BNM("il2cpp_domain_assembly_open")), count);
+        HOOK(AssemblyLoadOffset, Assembly$$Load, nullptr);
+        BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::Assembly::Load in lib: %p.", Utils::OffsetInLib((void *)AssemblyLoadOffset));
+
+#endif
+#endif
+
+        //! il2cpp::vm::Assembly::GetAllAssemblies
+#ifdef BNM_USE_APPDOMAIN
+        auto assemblyClass = il2cppMethods.il2cpp_class_from_name(il2cppMethods.il2cpp_get_corlib(), OBFUSCATE_BNM("System"), OBFUSCATE_BNM("AppDomain"));
+        auto getAssembly = LoadClass(assemblyClass).GetMethodByName(OBFUSCATE_BNM("GetAssemblies"), 1);
+        if (getAssembly) {
+            const int sCount
+#if !defined(__aarch64__) && UNITY_VER >= 211
+                = count;
+#else
+                = count + 1;
+#endif
+            // Path:
+            // System.AppDomain.GetAssemblies(bool) ->
+            // il2cpp::icalls::mscorlib::System::AppDomain::GetAssemblies ->
+            // il2cpp::vm::Assembly::GetAllAssemblies
+            BNM_PTR GetAssembliesAdr = HexUtils::FindNextJump(getAssembly.GetOffset(), count);
+            Assembly$$GetAllAssemblies = (AssemblyVector *(*)())(HexUtils::FindNextJump(GetAssembliesAdr, sCount));
+            BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::Assembly::GetAllAssemblies using AppDomain in lib: %p.", Utils::OffsetInLib((void *)Assembly$$GetAllAssemblies));
+        } else {
+#endif
+            // Path:
+            // il2cpp_domain_get_assemblies ->
+            // il2cpp::vm::Assembly::GetAllAssemblies
+            auto adr = (BNM_PTR) il2cppScan.findSymbol(OBFUSCATE_BNM("il2cpp_domain_get_assemblies"));
+            Assembly$$GetAllAssemblies = (AssemblyVector *(*)())(HexUtils::FindNextJump(adr, count));
+            BNM_LOG_DEBUG("[SetupBNM] il2cpp::vm::Assembly::GetAllAssemblies using domain in lib: %p.", Utils::OffsetInLib((void *)Assembly$$GetAllAssemblies));
+#ifdef BNM_USE_APPDOMAIN
+        }
+#endif
+
+        auto mscorlib = il2cppMethods.il2cpp_get_corlib();
+
+        // Get MakeGenericMethod_impl. Depending on Unity version, it may be in different classes.
+        auto runtimeMethodInfoClassPtr = TryGetClassInImage(mscorlib, OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("RuntimeMethodInfo"));
+        if (runtimeMethodInfoClassPtr) {
+            BNM_Internal::Class$$Init(runtimeMethodInfoClassPtr);
+            vmData.RuntimeMethodInfo$$MakeGenericMethod_impl = BNM::MethodBase(IterateMethods(runtimeMethodInfoClassPtr, [](const MethodBase &methodBase) {
+                return !strcmp(methodBase.myInfo->name, OBFUSCATE_BNM("MakeGenericMethod_impl"));
+            }));
+        }
+        if (!vmData.RuntimeMethodInfo$$MakeGenericMethod_impl)
+            vmData.RuntimeMethodInfo$$MakeGenericMethod_impl = LoadClass(OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("MonoMethod"), mscorlib).GetMethodByName(OBFUSCATE_BNM("MakeGenericMethod_impl"));
+
+        auto runtimeTypeClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("RuntimeType"), mscorlib);
+        auto stringClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("String"), mscorlib);
+        auto interlockedClass = LoadClass(OBFUSCATE_BNM("System.Threading"), OBFUSCATE_BNM("Interlocked"), mscorlib);
+        auto objectClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("Object"), mscorlib);
+        for (uint16_t slot = 0; slot < objectClass.klass->vtable_count; slot++) {
+            const BNM::IL2CPP::MethodInfo* vMethod = objectClass.klass->vtable[slot].method;
+            if (strcmp(vMethod->name, OBFUSCATE_BNM("Finalize")) != 0) continue;
+            finalizerSlot = slot;
+            break;
+        }
+        vmData.Object = objectClass;
+        vmData.Interlocked$$CompareExchange = interlockedClass.GetMethodByName(OBFUSCATE_BNM("CompareExchange"), {objectClass, objectClass, objectClass});
+        vmData.RuntimeType$$MakeGenericType = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("MakeGenericType"), 2);
+        vmData.RuntimeType$$MakePointerType = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("MakePointerType"), 1);
+        vmData.RuntimeType$$make_byref_type = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("make_byref_type"), 0);
+        vmData.String$$Empty = stringClass.GetFieldByName(OBFUSCATE_BNM("Empty")).cast<Mono::monoString *>().GetPointer();
+
+        auto listClass = LoadClass(OBFUSCATE_BNM("System.Collections.Generic"), OBFUSCATE_BNM("List`1"));
+        auto cls = listClass.klass;
+        auto size = sizeof(IL2CPP::Il2CppClass) + cls->vtable_count * sizeof(IL2CPP::VirtualInvokeData);
+        listClass.klass = (IL2CPP::Il2CppClass *) malloc(size);
+        memcpy(listClass.klass, cls, size);
+        listClass.klass->has_finalize = 0;
+        listClass.klass->instance_size = sizeof(Mono::monoList<void*>);
+
+        // Bypassing the creation of a static _emptyArray field because it cannot exist
+        listClass.klass->has_cctor = 0;
+        listClass.klass->cctor_started = 0;
+#if UNITY_VER >= 212
+        listClass.klass->cctor_finished_or_no_cctor = 1;
+#else
+        listClass.klass->cctor_finished = 1;
+#endif
+
+        auto constructor = listClass.GetMethodByName(BNM_Internal::constructorName, 0).myInfo;
+
+        auto newMethods = (IL2CPP::MethodInfo **) malloc(sizeof(IL2CPP::MethodInfo *) * listClass.klass->method_count);
+        memcpy(newMethods, listClass.klass->methods, sizeof(IL2CPP::MethodInfo *) * listClass.klass->method_count);
+
+        auto newConstructor = (IL2CPP::MethodInfo *) malloc(sizeof(IL2CPP::MethodInfo));
+        memcpy(newConstructor, constructor, sizeof(IL2CPP::MethodInfo));
+        newConstructor->methodPointer = (decltype(newConstructor->methodPointer)) BNM_Internal::Empty;
+        newConstructor->invoker_method = (decltype(newConstructor->invoker_method)) BNM_Internal::Empty;
+
+        for (uint16_t i = 0; i < listClass.klass->method_count; ++i) {
+            if (listClass.klass->methods[i] == constructor) {
+                newMethods[i] = newConstructor;
+                continue;
+            }
+            newMethods[i] = (IL2CPP::MethodInfo *) listClass.klass->methods[i];
+        }
+        listClass.klass->methods = (const IL2CPP::MethodInfo **) newMethods;
+        customListTemplateClass = listClass;
+    }
+
     void BNM_il2cpp_init(const char *domain_name) {
         old_BNM_il2cpp_init(domain_name);
 
@@ -2292,6 +2509,15 @@ namespace BNM_Internal {
 
         il2cppLibraryHandle = handle;
         return true;
+    }
+}
+
+namespace Zygisk {
+    void LoadKittyMemory(ElfScanner ilcppScan) {
+        BNM_Internal::il2cppLibraryAbsolutePath = ilcppScan.filePath().c_str();
+        BNM_Internal::il2cppLibraryAbsoluteAddress = (BNM_PTR) ilcppScan.base();
+        BNM_Internal::SetupBNMKittyMemory(ilcppScan);
+        bnmLoaded = true;
     }
 }
 

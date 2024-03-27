@@ -1304,6 +1304,10 @@ namespace BNM {
         void *OffsetInLib(void *offsetInMemory);
     }
 #endif
+
+    namespace Zygisk {
+        void LoadKittyMemory(ElfScanner ilcppScan);
+    }
 }
 #define InitResolveFunc(x, y) BNM::InitFunc(x, BNM::GetExternMethod(y))
 
