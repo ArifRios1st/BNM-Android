@@ -139,7 +139,7 @@ inline void UNHOOK(PTR_T ptr, OLD_T oldMethod) {
 inline void UNHOOK() {
     for (const HookData &hookData : hookDatas)
         UNHOOK(hookData.ptr,hookData.oldBytes);
-    
+
     hookDatas.clear();
 }
 
@@ -193,5 +193,7 @@ inline void UNHOOK() {
 #define BNM_LOG_WARN(...) ((void)0)
 #define BNM_LOG_WARN_IF(condition, ...) ((void)0)
 #endif
+
+#include <KittyInclude.hpp>
 
 #define BNM_VER "1.6"
