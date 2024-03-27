@@ -14,11 +14,11 @@ static_assert(false, "ByNameModding requre C++20 and upper!");
 //#define UNITY_VER 193 // 2019.3.x
 //#define UNITY_VER 194 // 2019.4.x
 //#define UNITY_VER 201 // 2020.1.x
-#define UNITY_VER 202 // From 2020.2.x to 2020.3.19 (They are probably same because BNM don't use things like Il2CppCodeGen)
+// #define UNITY_VER 202 // From 2020.2.x to 2020.3.19 (They are probably same because BNM don't use things like Il2CppCodeGen)
 //#define UNITY_VER 203 // From 2020.3.20 to 2020.3.xx
 //#define UNITY_VER 211 // 2021.1.x (You need set UNITY_PATCH_VER to 24 if build 24 and upper)
 //#define UNITY_VER 212 // 2021.2.x
-//#define UNITY_VER 213 // 2021.3.x
+#define UNITY_VER 213 // 2021.3.x
 //#define UNITY_VER 221 // 2022.1.x
 //#define UNITY_VER 222 // 2022.2.x - 2022.3.x
 //#define UNITY_VER 231 // 2023.1.x+
@@ -26,7 +26,7 @@ static_assert(false, "ByNameModding requre C++20 and upper!");
 #define UNITY_PATCH_VER 11 // For some special cases
 
 //! Allow to use deprecated methods
-// #define BNM_DEPRECATED
+#define BNM_DEPRECATED
 
 //! Allow use GetOffset
 //! GetOffset can only be used in very special cases, it should not be used on a permanent basis
