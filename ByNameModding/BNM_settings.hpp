@@ -71,8 +71,9 @@ static_assert(false, "ByNameModding requre C++20 and upper!");
 #endif
 
 //! Include your string obfuscator
-#define OBFUSCATE_BNM(str) str // const char *
-#define OBFUSCATES_BNM(str) std::string(str) // std::string
+#include <obfuscate.h>
+#define OBFUSCATE_BNM(str) OBFUSCATE(str) // const char *
+#define OBFUSCATES_BNM(str) std::string(OBFUSCATE(str)) // std::string
 
 //! Include your hooking software
 //! Substrate MSHook with And64InlineHook

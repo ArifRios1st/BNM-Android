@@ -555,7 +555,7 @@ namespace BNM {
 #ifdef BNM_ALLOW_STR_METHODS
         // Get info about field
         inline std::string str() const {
-            if (init) return LoadClass(myInfo->parent).str() + OBFUSCATE_BNM(".(") + myInfo->name + OBFUSCATE_BNM(")");
+            if (init) return LoadClass(myInfo->parent).str() + OBFUSCATES_BNM(".(") + myInfo->name + OBFUSCATES_BNM(")");
             return OBFUSCATE_BNM("Мёртвое поле");
         }
 #endif
@@ -671,10 +671,10 @@ namespace BNM {
 #define kls declaring_type
 #endif
             if (!init) return OBFUSCATE_BNM("Мёртвый метод");
-            return LoadClass(myInfo->return_type).str() + OBFUSCATE_BNM(" ") +
-                LoadClass(myInfo->kls).str() + OBFUSCATE_BNM(".(") +
-                myInfo->name + OBFUSCATE_BNM("){кол-во аргументов: ") +
-                std::to_string(myInfo->parameters_count) + OBFUSCATE_BNM("}") +
+            return LoadClass(myInfo->return_type).str() + OBFUSCATES_BNM(" ") +
+                LoadClass(myInfo->kls).str() + OBFUSCATES_BNM(".(") +
+                myInfo->name + OBFUSCATES_BNM("){кол-во аргументов: ") +
+                std::to_string(myInfo->parameters_count) + OBFUSCATES_BNM("}") +
                 (isStatic ? OBFUSCATE_BNM("(статический)") : OBFUSCATE_BNM(""));
 #undef kls
         }
@@ -754,9 +754,9 @@ namespace BNM {
         inline std::string str() const {
             if (!hasGetter && !hasSetter) return OBFUSCATE_BNM("Мёртвое свойство");
             auto isStatic = hasGetter ? getter.isStatic : setter.isStatic;
-            return LoadClass(myInfo->parent).str() + OBFUSCATE_BNM(" ") +
-                LoadClass(myInfo->parent).str() + OBFUSCATE_BNM(".(") +
-                ((Structures::Mono::monoString *)myInfo->name)->str() + OBFUSCATE_BNM("){метод получения: ") + (hasGetter ? OBFUSCATE_BNM("есть") : OBFUSCATE_BNM("нет")) + OBFUSCATE_BNM(", метод установки: ") + (hasSetter ? OBFUSCATE_BNM("есть") : OBFUSCATE_BNM("нет")) + OBFUSCATE_BNM("}") +
+            return LoadClass(myInfo->parent).str() + OBFUSCATES_BNM(" ") +
+                LoadClass(myInfo->parent).str() + OBFUSCATES_BNM(".(") +
+                ((Structures::Mono::monoString *)myInfo->name)->str() + OBFUSCATES_BNM("){метод получения: ") + (hasGetter ? OBFUSCATE_BNM("есть") : OBFUSCATES_BNM("нет")) + OBFUSCATES_BNM(", метод установки: ") + (hasSetter ? OBFUSCATE_BNM("есть") : OBFUSCATES_BNM("нет")) + OBFUSCATES_BNM("}") +
                 (isStatic ? OBFUSCATE_BNM("(статическое)") : OBFUSCATE_BNM(""));
         }
 #endif

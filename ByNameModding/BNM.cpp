@@ -68,7 +68,7 @@ namespace BNM_Internal {
     std::list<void(*)()> onIl2CppLoaded{};
     std::list<void(*)()> &GetEvents() { return onIl2CppLoaded; }
 
-    std::string_view constructorName = OBFUSCATE_BNM(".ctor");
+    std::string_view constructorName = ".ctor";
     BNM::LoadClass customListTemplateClass{};
     std::map<uint32_t, BNM::LoadClass> customListsMap{};
     int32_t finalizerSlot = -1;
@@ -1076,10 +1076,10 @@ namespace BNM {
 
         if (isLibrariesExtracted)
             // By path to library /data/app/.../package name-.../lib/arch/libil2cpp.so
-            file = std::string(cDir) + OBFUSCATE_BNM("/libil2cpp.so");
+            file = std::string(cDir) + OBFUSCATES_BNM("/libil2cpp.so");
         else
             // From base.apk /data/app/.../package name-.../base.apk!/lib/arch/libil2cpp.so
-            file = std::string(cDir) + OBFUSCATE_BNM("!/lib/" CURRENT_ARCH "/libil2cpp.so");
+            file = std::string(cDir) + OBFUSCATES_BNM("!/lib/" CURRENT_ARCH "/libil2cpp.so");
 
         // Try to load il2cpp using this path
         auto fileCopy = (char *) malloc(file.size() + 1);
@@ -1094,7 +1094,7 @@ namespace BNM {
         file.clear();
 
         // From split_config.arch.apk /data/app/.../the package name is.../split_config.arch.apk!/lib/arch/libil2cpp.so
-        file = std::string(cDir).substr(0, cDir.length() - 8) + OBFUSCATE_BNM("split_config." CURRENT_ARCH ".apk!/lib/" CURRENT_ARCH "/libil2cpp.so");
+        file = std::string(cDir).substr(0, cDir.length() - 8) + OBFUSCATES_BNM("split_config." CURRENT_ARCH ".apk!/lib/" CURRENT_ARCH "/libil2cpp.so");
         fileCopy = (char *) malloc(file.size() + 1);
         memcpy(fileCopy, file.data(), file.size());
         fileCopy[file.size()] = 0;
@@ -2089,7 +2089,7 @@ namespace BNM_Internal {
         //! il2cpp::vm::Image::GetTypes
         if (il2cppMethods.il2cpp_image_get_class == nullptr) {
             auto assemblyClass = il2cppMethods.il2cpp_class_from_name(il2cppMethods.il2cpp_get_corlib(), OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("Assembly"));
-            BNM_PTR GetTypesAdr = LoadClass(assemblyClass).GetMethodByName(OBFUSCATE_BNM("GetTypes"), 1).GetOffset();
+            BNM_PTR GetTypesAdr = LoadClass(assemblyClass).GetMethodByName(OBFUSCATES_BNM("GetTypes"), 1).GetOffset();
             const int sCount
 #if UNITY_VER >= 211
                     = count;
@@ -2191,7 +2191,7 @@ namespace BNM_Internal {
         auto mscorlib = il2cppMethods.il2cpp_get_corlib();
 
         // Get MakeGenericMethod_impl. Depending on Unity version, it may be in different classes.
-        auto runtimeMethodInfoClassPtr = TryGetClassInImage(mscorlib, OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("RuntimeMethodInfo"));
+        auto runtimeMethodInfoClassPtr = TryGetClassInImage(mscorlib, OBFUSCATES_BNM("System.Reflection"), OBFUSCATES_BNM("RuntimeMethodInfo"));
         if (runtimeMethodInfoClassPtr) {
             BNM_Internal::Class$$Init(runtimeMethodInfoClassPtr);
             vmData.RuntimeMethodInfo$$MakeGenericMethod_impl = BNM::MethodBase(IterateMethods(runtimeMethodInfoClassPtr, [](const MethodBase &methodBase) {
@@ -2199,12 +2199,12 @@ namespace BNM_Internal {
             }));
         }
         if (!vmData.RuntimeMethodInfo$$MakeGenericMethod_impl)
-            vmData.RuntimeMethodInfo$$MakeGenericMethod_impl = LoadClass(OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("MonoMethod"), mscorlib).GetMethodByName(OBFUSCATE_BNM("MakeGenericMethod_impl"));
+            vmData.RuntimeMethodInfo$$MakeGenericMethod_impl = LoadClass(OBFUSCATES_BNM("System.Reflection"), OBFUSCATES_BNM("MonoMethod"), mscorlib).GetMethodByName(OBFUSCATES_BNM("MakeGenericMethod_impl"));
 
-        auto runtimeTypeClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("RuntimeType"), mscorlib);
-        auto stringClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("String"), mscorlib);
-        auto interlockedClass = LoadClass(OBFUSCATE_BNM("System.Threading"), OBFUSCATE_BNM("Interlocked"), mscorlib);
-        auto objectClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("Object"), mscorlib);
+        auto runtimeTypeClass = LoadClass(OBFUSCATES_BNM("System"), OBFUSCATES_BNM("RuntimeType"), mscorlib);
+        auto stringClass = LoadClass(OBFUSCATES_BNM("System"), OBFUSCATES_BNM("String"), mscorlib);
+        auto interlockedClass = LoadClass(OBFUSCATES_BNM("System.Threading"), OBFUSCATES_BNM("Interlocked"), mscorlib);
+        auto objectClass = LoadClass(OBFUSCATES_BNM("System"), OBFUSCATES_BNM("Object"), mscorlib);
         for (uint16_t slot = 0; slot < objectClass.klass->vtable_count; slot++) {
             const BNM::IL2CPP::MethodInfo* vMethod = objectClass.klass->vtable[slot].method;
             if (strcmp(vMethod->name, OBFUSCATE_BNM("Finalize")) != 0) continue;
@@ -2212,13 +2212,13 @@ namespace BNM_Internal {
             break;
         }
         vmData.Object = objectClass;
-        vmData.Interlocked$$CompareExchange = interlockedClass.GetMethodByName(OBFUSCATE_BNM("CompareExchange"), {objectClass, objectClass, objectClass});
-        vmData.RuntimeType$$MakeGenericType = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("MakeGenericType"), 2);
-        vmData.RuntimeType$$MakePointerType = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("MakePointerType"), 1);
-        vmData.RuntimeType$$make_byref_type = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("make_byref_type"), 0);
-        vmData.String$$Empty = stringClass.GetFieldByName(OBFUSCATE_BNM("Empty")).cast<Mono::monoString *>().GetPointer();
+        vmData.Interlocked$$CompareExchange = interlockedClass.GetMethodByName(OBFUSCATES_BNM("CompareExchange"), {objectClass, objectClass, objectClass});
+        vmData.RuntimeType$$MakeGenericType = runtimeTypeClass.GetMethodByName(OBFUSCATES_BNM("MakeGenericType"), 2);
+        vmData.RuntimeType$$MakePointerType = runtimeTypeClass.GetMethodByName(OBFUSCATES_BNM("MakePointerType"), 1);
+        vmData.RuntimeType$$make_byref_type = runtimeTypeClass.GetMethodByName(OBFUSCATES_BNM("make_byref_type"), 0);
+        vmData.String$$Empty = stringClass.GetFieldByName(OBFUSCATES_BNM("Empty")).cast<Mono::monoString *>().GetPointer();
 
-        auto listClass = LoadClass(OBFUSCATE_BNM("System.Collections.Generic"), OBFUSCATE_BNM("List`1"));
+        auto listClass = LoadClass(OBFUSCATES_BNM("System.Collections.Generic"), OBFUSCATES_BNM("List`1"));
         auto cls = listClass.klass;
         auto size = sizeof(IL2CPP::Il2CppClass) + cls->vtable_count * sizeof(IL2CPP::VirtualInvokeData);
         listClass.klass = (IL2CPP::Il2CppClass *) malloc(size);
@@ -2302,7 +2302,7 @@ namespace BNM_Internal {
         //! il2cpp::vm::Image::GetTypes
         if (il2cppMethods.il2cpp_image_get_class == nullptr) {
             auto assemblyClass = il2cppMethods.il2cpp_class_from_name(il2cppMethods.il2cpp_get_corlib(), OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("Assembly"));
-            BNM_PTR GetTypesAdr = LoadClass(assemblyClass).GetMethodByName(OBFUSCATE_BNM("GetTypes"), 1).GetOffset();
+            BNM_PTR GetTypesAdr = LoadClass(assemblyClass).GetMethodByName(OBFUSCATES_BNM("GetTypes"), 1).GetOffset();
             const int sCount
 #if UNITY_VER >= 211
                     = count;
@@ -2404,7 +2404,7 @@ namespace BNM_Internal {
         auto mscorlib = il2cppMethods.il2cpp_get_corlib();
 
         // Get MakeGenericMethod_impl. Depending on Unity version, it may be in different classes.
-        auto runtimeMethodInfoClassPtr = TryGetClassInImage(mscorlib, OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("RuntimeMethodInfo"));
+        auto runtimeMethodInfoClassPtr = TryGetClassInImage(mscorlib, OBFUSCATES_BNM("System.Reflection"), OBFUSCATES_BNM("RuntimeMethodInfo"));
         if (runtimeMethodInfoClassPtr) {
             BNM_Internal::Class$$Init(runtimeMethodInfoClassPtr);
             vmData.RuntimeMethodInfo$$MakeGenericMethod_impl = BNM::MethodBase(IterateMethods(runtimeMethodInfoClassPtr, [](const MethodBase &methodBase) {
@@ -2412,12 +2412,12 @@ namespace BNM_Internal {
             }));
         }
         if (!vmData.RuntimeMethodInfo$$MakeGenericMethod_impl)
-            vmData.RuntimeMethodInfo$$MakeGenericMethod_impl = LoadClass(OBFUSCATE_BNM("System.Reflection"), OBFUSCATE_BNM("MonoMethod"), mscorlib).GetMethodByName(OBFUSCATE_BNM("MakeGenericMethod_impl"));
+            vmData.RuntimeMethodInfo$$MakeGenericMethod_impl = LoadClass(OBFUSCATES_BNM("System.Reflection"), OBFUSCATES_BNM("MonoMethod"), mscorlib).GetMethodByName(OBFUSCATES_BNM("MakeGenericMethod_impl"));
 
-        auto runtimeTypeClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("RuntimeType"), mscorlib);
-        auto stringClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("String"), mscorlib);
-        auto interlockedClass = LoadClass(OBFUSCATE_BNM("System.Threading"), OBFUSCATE_BNM("Interlocked"), mscorlib);
-        auto objectClass = LoadClass(OBFUSCATE_BNM("System"), OBFUSCATE_BNM("Object"), mscorlib);
+        auto runtimeTypeClass = LoadClass(OBFUSCATES_BNM("System"), OBFUSCATES_BNM("RuntimeType"), mscorlib);
+        auto stringClass = LoadClass(OBFUSCATES_BNM("System"), OBFUSCATES_BNM("String"), mscorlib);
+        auto interlockedClass = LoadClass(OBFUSCATES_BNM("System.Threading"), OBFUSCATES_BNM("Interlocked"), mscorlib);
+        auto objectClass = LoadClass(OBFUSCATES_BNM("System"), OBFUSCATES_BNM("Object"), mscorlib);
         for (uint16_t slot = 0; slot < objectClass.klass->vtable_count; slot++) {
             const BNM::IL2CPP::MethodInfo* vMethod = objectClass.klass->vtable[slot].method;
             if (strcmp(vMethod->name, OBFUSCATE_BNM("Finalize")) != 0) continue;
@@ -2425,13 +2425,13 @@ namespace BNM_Internal {
             break;
         }
         vmData.Object = objectClass;
-        vmData.Interlocked$$CompareExchange = interlockedClass.GetMethodByName(OBFUSCATE_BNM("CompareExchange"), {objectClass, objectClass, objectClass});
-        vmData.RuntimeType$$MakeGenericType = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("MakeGenericType"), 2);
-        vmData.RuntimeType$$MakePointerType = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("MakePointerType"), 1);
-        vmData.RuntimeType$$make_byref_type = runtimeTypeClass.GetMethodByName(OBFUSCATE_BNM("make_byref_type"), 0);
-        vmData.String$$Empty = stringClass.GetFieldByName(OBFUSCATE_BNM("Empty")).cast<Mono::monoString *>().GetPointer();
+        vmData.Interlocked$$CompareExchange = interlockedClass.GetMethodByName(OBFUSCATES_BNM("CompareExchange"), {objectClass, objectClass, objectClass});
+        vmData.RuntimeType$$MakeGenericType = runtimeTypeClass.GetMethodByName(OBFUSCATES_BNM("MakeGenericType"), 2);
+        vmData.RuntimeType$$MakePointerType = runtimeTypeClass.GetMethodByName(OBFUSCATES_BNM("MakePointerType"), 1);
+        vmData.RuntimeType$$make_byref_type = runtimeTypeClass.GetMethodByName(OBFUSCATES_BNM("make_byref_type"), 0);
+        vmData.String$$Empty = stringClass.GetFieldByName(OBFUSCATES_BNM("Empty")).cast<Mono::monoString *>().GetPointer();
 
-        auto listClass = LoadClass(OBFUSCATE_BNM("System.Collections.Generic"), OBFUSCATE_BNM("List`1"));
+        auto listClass = LoadClass(OBFUSCATES_BNM("System.Collections.Generic"), OBFUSCATES_BNM("List`1"));
         auto cls = listClass.klass;
         auto size = sizeof(IL2CPP::Il2CppClass) + cls->vtable_count * sizeof(IL2CPP::VirtualInvokeData);
         listClass.klass = (IL2CPP::Il2CppClass *) malloc(size);
@@ -2528,7 +2528,7 @@ namespace BNM::Structures::Unity {
         if (!m_Collider || (BNM_PTR) m_Collider < 0) return {};
 #if UNITY_VER > 174
         static void * (*FromId)(int);
-        if (!FromId) InitResolveFunc(FromId, OBFUSCATE_BNM("UnityEngine.Object::FindObjectFromInstanceID"));
+        if (!FromId) InitResolveFunc(FromId, OBFUSCATES_BNM("UnityEngine.Object::FindObjectFromInstanceID"));
         return FromId(m_Collider);
 #else
         return m_Collider;
