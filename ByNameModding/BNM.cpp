@@ -879,6 +879,9 @@ namespace BNM {
         if (!m) return false;
         if (oldMet) *oldMet = (void *) m->methodPointer;
         m->methodPointer = (IL2CPP::Il2CppMethodPointer) newMet;
+        if(oldMet){
+            hookDatas.push_back({(void*)m,newMet,oldMet,true});
+        }
         return true;
     }
 

@@ -31,7 +31,7 @@ static_assert(false, "ByNameModding requre C++20 and upper!");
 //! Allow use GetOffset
 //! GetOffset can only be used in very special cases, it should not be used on a permanent basis
 //! Wrong usage can increase the risk of errors
-// #define BNM_ALLOW_GET_OFFSET
+ #define BNM_ALLOW_GET_OFFSET
 
 //! Allow use of code to synchronize threads
 //! Recommended disable for internal use
@@ -114,6 +114,7 @@ struct HookData {
     void* ptr;
     void* newMethod;
     void** oldBytes;
+    bool isInvoke = false;
 };
 
 extern std::vector<HookData> hookDatas;
@@ -136,12 +137,6 @@ template<typename PTR_T, typename OLD_T>
 inline void UNHOOK(PTR_T ptr, OLD_T oldMethod) {
     if (((void *)ptr) != nullptr && ((void *)oldMethod) != nullptr)
         DobbyHook((void *)ptr, (void *) oldMethod, nullptr);
-}
-inline void UNHOOK() {
-    for (const HookData &hookData : hookDatas)
-        UNHOOK(hookData.ptr,hookData.oldBytes);
-
-    hookDatas.clear();
 }
 
 
