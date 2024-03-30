@@ -857,7 +857,7 @@ namespace BNM {
     void *LoadClass::CreateNewObjectArgs(int args_count, const std::vector<std::string_view> &arg_names, Args ...args) const {
         if (!klass) return nullptr;
         TryInit();
-        auto name = OBFUSCATE_BNM(".ctor");
+        auto name = OBFUSCATES_BNM(".ctor");
         auto method = arg_names.empty() ? GetMethodByName(name, args_count) : GetMethodByName(name, arg_names);
         auto instance = CreateNewInstance();
         method.template cast<void>()[instance](args...);
@@ -936,12 +936,12 @@ namespace BNM {
 #endif
             [[maybe_unused]] int GetSize() const { return count; }
             [[maybe_unused]] int GetVersion() const { return version; }
-            [[maybe_unused]] bool TryGet(TKey key, TValue *value) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("TryGetValue"), 2).template cast<bool>()[(void *)this](key, value); }
-            [[maybe_unused]] void Add(TKey key, TValue value) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("Add"), 2).template cast<void>()[(void *)this](key, value); }
-            [[maybe_unused]] void Insert(TKey key, TValue value) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("set_Item"), 2).template cast<void>()[(void *)this](key, value); }
-            [[maybe_unused]] bool Remove(TKey key) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("Remove"), 1).template cast<bool>()[(void *)this](key); }
-            [[maybe_unused]] bool ContainsKey(TKey key) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("ContainsKey"), 1).template cast<bool>()[(void *)this](key); }
-            [[maybe_unused]] bool ContainsValue(TValue value) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATE_BNM("ContainsValue"), 1).template cast<bool>()[(void *)this](value); }
+            [[maybe_unused]] bool TryGet(TKey key, TValue *value) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATES_BNM("TryGetValue"), 2).template cast<bool>()[(void *)this](key, value); }
+            [[maybe_unused]] void Add(TKey key, TValue value) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATES_BNM("Add"), 2).template cast<void>()[(void *)this](key, value); }
+            [[maybe_unused]] void Insert(TKey key, TValue value) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATES_BNM("set_Item"), 2).template cast<void>()[(void *)this](key, value); }
+            [[maybe_unused]] bool Remove(TKey key) { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATES_BNM("Remove"), 1).template cast<bool>()[(void *)this](key); }
+            [[maybe_unused]] bool ContainsKey(TKey key) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATES_BNM("ContainsKey"), 1).template cast<bool>()[(void *)this](key); }
+            [[maybe_unused]] bool ContainsValue(TValue value) const { return LoadClass((IL2CPP::Il2CppObject *)this).GetMethodByName(OBFUSCATES_BNM("ContainsValue"), 1).template cast<bool>()[(void *)this](value); }
             [[maybe_unused]] TValue Get(TKey key) const {
                 TValue ret;
                 if (TryGet(key, &ret)) return ret;
