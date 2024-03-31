@@ -953,7 +953,7 @@ namespace BNM {
 #elif defined(__i386__) || defined(__x86_64__)
 
         // Check is assembly is `call ...`
-        bool IsCallHex(const std::string &hex) { return hex.substr(0, 2) == OBFUSCATE_BNM("E8"); }
+        bool IsCallHex(const std::string &hex) { return hex.substr(0, 2) == OBFUSCATES_BNM("E8"); }
 #elif defined(__riscv)
 #error "Is it out for Android?"
 #else
