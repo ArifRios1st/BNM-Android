@@ -110,15 +110,9 @@ inline void HOOK(PTR_T ptr, NEW_T newMethod, OLD_T&& oldBytes) {
 #include <dobby.h>
 #include <vector>
 
-struct HookData {
-    void* ptr;
-    void* newMethod;
-    void** oldBytes;
-    bool isInvoke = false;
-    bool isVirtual = false;
-};
+#include "Utils/HookData.hpp"
 
-extern std::vector<HookData> hookDatas;
+static inline std::vector<HookData> hookDatas;
 
 template<typename PTR_T, typename NEW_T, typename T_OLD>
 inline void HOOK(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) {
@@ -134,10 +128,25 @@ inline void HOOK(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
         hookDatas.push_back({(void *)ptr, (void *) newMethod, (void **) &oldBytes});
     }
 }
-template<typename PTR_T, typename OLD_T>
-inline void UNHOOK(PTR_T ptr, OLD_T oldMethod) {
-    if (((void *)ptr) != nullptr && ((void *)oldMethod) != nullptr)
-        DobbyHook((void *)ptr, (void *) *oldMethod, nullptr);
+template<typename PTR_T>
+inline void UNHOOK(PTR_T ptr) {
+    if (((void *)ptr) != nullptr){
+        DobbyDestroy((void *)ptr);
+    }
+}
+
+template<typename PTR_T, typename T_OLD>
+inline void UNHOOK(PTR_T ptr, T_OLD &oldBytes) {
+    if (((void *)ptr) != nullptr){
+        *reinterpret_cast<void**>(ptr) = *oldBytes;
+    }
+}
+
+template<typename PTR_T, typename T_OLD>
+inline void UNHOOK(PTR_T ptr, T_OLD &&oldBytes) {
+    if (((void *)ptr) != nullptr){
+        *reinterpret_cast<void**>(ptr) = *oldBytes;
+    }
 }
 
 

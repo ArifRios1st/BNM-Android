@@ -10,8 +10,6 @@
 #include "BNM.hpp"
 #include "BNM_data/utf8.h"
 
-std::vector<HookData> hookDatas;
-
 namespace BNM_Internal {
     using namespace BNM;
     using namespace Structures;
@@ -880,9 +878,14 @@ namespace BNM {
         if (oldMet) *oldMet = (void *) m->methodPointer;
         m->methodPointer = (IL2CPP::Il2CppMethodPointer) newMet;
         if(oldMet){
-            hookDatas.push_back({(void*)m,newMet,oldMet,true});
+            hookDatas.push_back({&m->methodPointer,newMet,oldMet,true});
         }
         return true;
+    }
+
+    [[maybe_unused]] void *InvokePtr(IL2CPP::MethodInfo *m) {
+        if (!m) return nullptr;
+        return &(m->methodPointer);
     }
 
     [[maybe_unused]] bool VirtualHookImpl(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, void *newMet, void **oldMet) {
@@ -910,11 +913,40 @@ namespace BNM {
 
             if (oldMet) *oldMet = (void *) vTable.methodPtr;
             vTable.methodPtr = (void(*)()) newMet;
-            hookDatas.push_back({&vTable,newMet,oldMet,false,true});
+            hookDatas.push_back({&vTable.methodPtr,newMet,oldMet,false,true});
             return true;
 
         }
         return false;
+    }
+
+    [[maybe_unused]] void *VirtualPtr(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m) {
+        if (!m || !targetClass) return nullptr;
+        uint16_t i = 0;
+        NEXT:
+        for (; i < targetClass.klass->vtable_count; ++i) {
+            auto &vTable = targetClass.klass->vtable[i];
+            auto count = vTable.method->parameters_count;
+
+            if (strcmp(vTable.method->name, m->name) || count != m->parameters_count) continue;
+
+            for (uint8_t p = 0; p < count; ++p) {
+#if UNITY_VER < 212
+                auto type = (vTable.method->parameters + p)->parameter_type;
+                auto type2 = (m->parameters + p)->parameter_type;
+#else
+                auto type = vTable.method->parameters[p];
+                auto type2 = m->parameters[p];
+#endif
+
+                if (LoadClass(type).GetIl2CppClass() != LoadClass(type2).GetIl2CppClass()) goto NEXT;
+
+            }
+
+            return &vTable.methodPtr;
+
+        }
+        return nullptr;
     }
 
     template<> [[maybe_unused]] bool IsA<IL2CPP::Il2CppObject *>(IL2CPP::Il2CppObject *object, IL2CPP::Il2CppClass *klass) {

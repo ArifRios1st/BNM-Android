@@ -1224,6 +1224,7 @@ namespace BNM {
 
     // Hook method by changing MethodInfo
     [[maybe_unused]] bool InvokeHookImpl(IL2CPP::MethodInfo *m, void *newMet, void **oldMet);
+    [[maybe_unused]] void *InvokePtr(IL2CPP::MethodInfo *m);
 
     template<typename T_NEW, typename T_OLD>
     [[maybe_unused]] bool InvokeHook(const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &oldMet) {
@@ -1242,6 +1243,7 @@ namespace BNM {
 
     // Hook method by changing the table of virtual methods of a class
     [[maybe_unused]] bool VirtualHookImpl(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m, void *newMet, void **oldMet);
+    [[maybe_unused]] void *VirtualPtr(BNM::LoadClass targetClass, IL2CPP::MethodInfo *m);
 
     template<typename T_NEW, typename T_OLD>
     [[maybe_unused]] bool VirtualHook(BNM::LoadClass targetClass, const BNM::MethodBase &targetMethod, T_NEW newMet, T_OLD &oldMet) {
