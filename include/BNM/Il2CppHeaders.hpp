@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <cstddef>
+
 namespace BNM {
     /// @cond
     namespace IL2CPP {

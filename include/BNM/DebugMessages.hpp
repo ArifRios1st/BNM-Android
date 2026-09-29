@@ -26,7 +26,7 @@
 #define DBG_BNM_MSG_CompileTimeClass_ToClass_Inner_Warn "[CompileTimeClassProcessors::ProcessModifierInfo] Getting an inner class before getting the main class is impossible!"
 #define DBG_BNM_MSG_CompileTimeClass_ToClass_Modifier_Warn "[CompileTimeClassProcessors::ProcessModifierInfo] Getting the class modifier before getting the class itself is impossible!"
 #define DBG_BNM_MSG_CompileTimeClass_ToClass_Generic_Warn "[CompileTimeClassProcessors::ProcessGenericInfo] Getting a generic class before getting the class itself is impossible!"
-#define DBG_BNM_MSG_CompileTimeClass_ToClass_OoB_Warn "[CompileTimeClass::ToClass] Type %lu, greater than or equal to the number of possible handlers!"
+#define DBG_BNM_MSG_CompileTimeClass_ToClass_OoB_Warn "[CompileTimeClass::ToClass] Type %zu, greater than or equal to the number of possible handlers!"
 
 
 
@@ -91,12 +91,12 @@
 #define DBG_BNM_MSG_ClassesManagement_Method_Static "static "
 #define DBG_BNM_MSG_ClassesManagement_MakeImage_Added_Image "Added new image: [%s]."
 #define DBG_BNM_MSG_ClassesManagement_ModifyClasses_Target "[ModifyClasses] Target: %s"
-#define DBG_BNM_MSG_ClassesManagement_ModifyClasses_Added_Method "\tAdded %smethod %s %lu."
-#define DBG_BNM_MSG_ClassesManagement_ModifyClasses_Hooked_Method "\tHooked %smethod %s %lu."
+#define DBG_BNM_MSG_ClassesManagement_ModifyClasses_Added_Method "\tAdded %smethod %s %zu."
+#define DBG_BNM_MSG_ClassesManagement_ModifyClasses_Hooked_Method "\tHooked %smethod %s %zu."
 #define DBG_BNM_MSG_ClassesManagement_ModifyClasses_Overridden_Method "\t\tOverridden method - %s."
 #define DBG_BNM_MSG_ClassesManagement_ModifyClasses_Added_Field "\tAdded field %s."
 #define DBG_BNM_MSG_ClassesManagement_CreateClass_Target "[CreateClass] Target: [%s]::[%s]::[%s]"
-#define DBG_BNM_MSG_ClassesManagement_CreateClass_Added_Method "\tAdded %smethod %s %lu."
+#define DBG_BNM_MSG_ClassesManagement_CreateClass_Added_Method "\tAdded %smethod %s %zu."
 #define DBG_BNM_MSG_ClassesManagement_CreateClass_Overridden_Method "\t\tOverridden method - %s."
 #define DBG_BNM_MSG_ClassesManagement_ProcessCustomClasses_Error "Failed find class by CompileTimeClass:"
 #define DBG_BNM_MSG_ClassesManagement_LogCompileTimeClass_None "None"

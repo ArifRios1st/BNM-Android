@@ -6,6 +6,8 @@ project(BNM)
 # Add dependents to liblog.so
 set(BNM_LINK_LOG OFF)
 
+option(BNM_TEST_HOOKING "Build BNM with test/stub hooking" OFF)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -40,6 +42,7 @@ add_library(
         src/MethodBase.cpp
         src/MonoStructures.cpp
         src/PropertyBase.cpp
+        src/TestDelegatesEvents.cpp
         src/UnityStructures.cpp
         src/Utils.cpp
 )
@@ -56,6 +59,10 @@ if (${BNM_LINK_LOG})
             PUBLIC
             log
     )
+endif ()
+
+if (BNM_TEST_HOOKING)
+    target_compile_definitions(BNM PUBLIC BNM_TEST_HOOKING)
 endif ()
 
 

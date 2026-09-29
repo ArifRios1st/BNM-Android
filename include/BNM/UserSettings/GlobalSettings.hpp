@@ -52,6 +52,34 @@ static_assert(false, "ByNameModding requires C++20 and above!");
 //! Enable coroutine creation code. REQUIRES ClassesManagement!
 #define BNM_COROUTINE
 
+//! Включить структуры и методы для UnityEngine.Physics (3D Physics: Rigidbody, Collider, Raycast, dll.)
+//! Enable structures and methods for UnityEngine.Physics (3D Physics)
+#define BNM_UNITY_PHYSICS
+
+//! Включить структуры и методы для UnityEngine.Physics2D (2D Physics: Rigidbody2D, Collider2D, Raycast2D, dll.)
+//! Enable structures and methods for UnityEngine.Physics2D (2D Physics)
+#define BNM_UNITY_PHYSICS2D
+
+//! Включить структуры и методы для UnityEngine.UI (uGUI: RectTransform, Canvas, Text, Image, Button, Slider, dll.)
+//! Enable structures and methods for UnityEngine.UI (uGUI)
+#define BNM_UNITY_UI
+
+//! Включить структуры и методы для TextMeshPro (TMP_Text, TextMeshPro, TextMeshProUGUI, TMP_InputField)
+//! Enable structures and methods for TextMeshPro
+#define BNM_UNITY_TEXTMESHPRO
+
+//! Включить структуры и методы для UnityEngine.Renderer, MeshRenderer, SkinnedMeshRenderer, SpriteRenderer, Mesh
+//! Enable structures and methods for Renderers (MeshRenderer, SkinnedMeshRenderer, SpriteRenderer, Mesh)
+#define BNM_UNITY_RENDERERS
+
+//! Включить структуры и методы для UnityEngine.Audio (AudioSource, AudioClip, AudioListener)
+//! Enable structures and methods for UnityEngine.Audio (AudioSource, AudioClip, AudioListener)
+#define BNM_UNITY_AUDIO
+
+//! Включить структуры и методы для UnityEngine.Animation (Animator, Animation, AnimationClip, AnimationState)
+//! Enable structures and methods for UnityEngine.Animation (Animator, Animation)
+#define BNM_UNITY_ANIMATION
+
 //! Отключить авто подмену через таблицу виртуальных методов в ClassesManagement
 //! Disable auto hook via virtual method table in ClassesManagement
 // #define BNM_AUTO_HOOK_DISABLE_VIRTUAL_HOOK
@@ -142,6 +170,19 @@ inline void Unhook(PTR_T ptr) {
 }
 */
 
+#ifdef BNM_TEST_HOOKING
+struct Dl_info { const char *dli_fname{}; void *dli_fbase{}; const char *dli_sname{}; void *dli_saddr{}; };
+template<typename PTR_T, typename NEW_T, typename T_OLD>
+inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) { return nullptr; }
+template<typename PTR_T, typename NEW_T, typename T_OLD>
+inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) { return nullptr; }
+template<typename PTR_T>
+inline void Unhook(PTR_T ptr) {}
+#define BNM_dlopen(x, y) nullptr
+#define BNM_dlsym(x, y) nullptr
+#define BNM_dlclose(x) 0
+#define BNM_dladdr(x, y) 0
+#else
 // Dummy
 #include <cassert>
 
@@ -172,6 +213,7 @@ inline void Unhook(PTR_T ptr) {
 #define BNM_dlsym dlsym
 #define BNM_dlclose dlclose
 #define BNM_dladdr dladdr
+#endif
 
 #include <cstdlib>
 
@@ -180,7 +222,13 @@ inline void Unhook(PTR_T ptr) {
 #define BNM_malloc malloc
 #define BNM_free free
 
+#ifdef __ANDROID__
 #include <android/log.h>
+#define BNM_PRINT_LOG(prio, ...) ((void)__android_log_print(prio, BNM_TAG, __VA_ARGS__))
+#else
+#include <cstdio>
+#define BNM_PRINT_LOG(prio, ...) ((void)printf(__VA_ARGS__))
+#endif
 
 #define BNM_TAG "ByNameModding"
 
@@ -191,30 +239,30 @@ inline void Unhook(PTR_T ptr) {
 #endif
 
 #ifdef BNM_INFO
-#define BNM_LOG_INFO(...) ((void)__android_log_print(4, BNM_TAG, __VA_ARGS__))
+#define BNM_LOG_INFO(...) BNM_PRINT_LOG(4, __VA_ARGS__)
 #else
 #define BNM_LOG_INFO(...) ((void)0)
 #endif
 
 #ifdef BNM_DEBUG
-#define BNM_LOG_DEBUG(...) ((void)__android_log_print(3, BNM_TAG, __VA_ARGS__))
-#define BNM_LOG_DEBUG_IF(condition, ...) if (condition) ((void)__android_log_print(3, BNM_TAG, __VA_ARGS__))
+#define BNM_LOG_DEBUG(...) BNM_PRINT_LOG(3, __VA_ARGS__)
+#define BNM_LOG_DEBUG_IF(condition, ...) if (condition) BNM_PRINT_LOG(3, __VA_ARGS__)
 #else
 #define BNM_LOG_DEBUG(...) ((void)0)
 #define BNM_LOG_DEBUG_IF(...) ((void)0)
 #endif
 
 #ifdef BNM_ERROR
-#define BNM_LOG_ERR(...) ((void)__android_log_print(6, BNM_TAG, __VA_ARGS__))
-#define BNM_LOG_ERR_IF(condition, ...) if (condition) ((void)__android_log_print(6, BNM_TAG, __VA_ARGS__))
+#define BNM_LOG_ERR(...) BNM_PRINT_LOG(6, __VA_ARGS__)
+#define BNM_LOG_ERR_IF(condition, ...) if (condition) BNM_PRINT_LOG(6, __VA_ARGS__)
 #else
 #define BNM_LOG_ERR(...) ((void)0)
 #define BNM_LOG_ERR_IF(condition, ...) ((void)0)
 #endif
 
 #ifdef BNM_WARNING
-#define BNM_LOG_WARN(...) ((void)__android_log_print(5, BNM_TAG, __VA_ARGS__))
-#define BNM_LOG_WARN_IF(condition, ...) if (condition) ((void)__android_log_print(5, BNM_TAG, __VA_ARGS__))
+#define BNM_LOG_WARN(...) BNM_PRINT_LOG(5, __VA_ARGS__)
+#define BNM_LOG_WARN_IF(condition, ...) if (condition) BNM_PRINT_LOG(5, __VA_ARGS__)
 #else
 #define BNM_LOG_WARN(...) ((void)0)
 #define BNM_LOG_WARN_IF(condition, ...) ((void)0)
