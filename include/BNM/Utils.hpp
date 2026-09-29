@@ -1,6 +1,7 @@
 #pragma once
 
 #include <csetjmp>
+#include <csignal>
 
 #include <string_view>
 #include <type_traits>
@@ -25,16 +26,17 @@ namespace BNM {
         @brief Macro function for checking if pointer points to valid address.
         @return True if address is valid.
     */
-    template <typename T, typename = std::enable_if<std::is_pointer_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_pointer_v<T>>>
     inline bool IsAllocated(T x) {
-#ifdef BNM_ALLOW_SAFE_IS_ALLOCATED
+#if defined(BNM_ALLOW_SAFE_IS_ALLOCATED) && defined(SIGSEGV)
         if (!x) return false;
 
         static jmp_buf jump;
-        static sighandler_t handler = [](int) { longjmp(jump, 1); }; // NOLINT
+        using sig_handler_t = void (*)(int);
+        static sig_handler_t handler = [](int) { longjmp(jump, 1); }; // NOLINT
         char c;
         bool ok = true;
-        sighandler_t old_handler = signal(SIGSEGV, handler);
+        sig_handler_t old_handler = signal(SIGSEGV, handler);
         if (!setjmp (jump)) c = *(char *) x; else ok = false; // NOLINT
         (void)c;
         signal(SIGSEGV, old_handler);
@@ -71,11 +73,30 @@ namespace BNM {
     void *GetIl2CppLibraryHandle();
 
     /**
+        @brief Unboxes an Il2CppObject into a value type or casts to a reference type pointer.
+        @tparam T Target type (e.g. int, float, Vector3, or Transform*)
+        @param obj The Il2CppObject to unbox
+        @return Extracted value or casted object pointer
+    */
+    template<typename T>
+    inline T Unbox(IL2CPP::Il2CppObject *obj) {
+        if (!obj) return {};
+        if constexpr (std::is_pointer_v<T>) {
+            return (T) obj;
+        } else {
+            return *(T *)(((char *)obj) + sizeof(BNM::IL2CPP::Il2CppObject));
+        }
+    }
+
+    /**
         @brief Unbox any object.
         @return Unboxed object of passed type
     */
     template<typename T>
     inline T UnboxObject(T obj) { return (T)(void *)(((char *)obj) + sizeof(BNM::IL2CPP::Il2CppObject)); }
+
+    template<typename T>
+    inline T UnboxObject(IL2CPP::Il2CppObject *obj) { return Unbox<T>(obj); }
 
 #ifdef BNM_DEPRECATED
     template <typename T, typename = std::enable_if<std::is_pointer<T>::value>>

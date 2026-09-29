@@ -82,7 +82,7 @@ static bool CheckHandle(void *handle) {
 
 bool Loading::TryLoadByJNI(JNIEnv *env, jobject context) {
     bool result = false;
-
+#ifdef __ANDROID__
     if (!env || Internal::il2cppLibraryHandle || Internal::states.state) return result;
 
     if (context == nullptr) {
@@ -122,6 +122,7 @@ bool Loading::TryLoadByJNI(JNIEnv *env, jobject context) {
 
     FINISH:
     env->ReleaseStringUTFChars(jDir, cDir.data()); env->DeleteLocalRef(jDir);
+#endif
     return result;
 }
 

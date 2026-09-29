@@ -1,6 +1,11 @@
 #pragma once
 
+#ifdef __ANDROID__
 #include <jni.h>
+#else
+typedef void *JNIEnv;
+typedef void *jobject;
+#endif
 
 #include "UserSettings/GlobalSettings.hpp"
 

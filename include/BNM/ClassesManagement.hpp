@@ -7,10 +7,12 @@
 #include <vector>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 
 #include "Il2CppHeaders.hpp"
 #include "Class.hpp"
 #include "Utils.hpp"
+#include "Defaults.hpp"
 
 namespace BNM {
     /// @cond
@@ -366,5 +368,31 @@ inline static _BNMCustomMethod_##_method_ BNMCustomMethod_##_method_ __attribute
     @param ... Method call arguments (for non-static method first argument should be `this`)
 */
 #define BNM_CallCustomMethodOrigin(_method_, ...) BNM::MANAGEMENT_STRUCTURES::CustomMethod::OriginInvokeGetter<decltype(&_BNMCustomClassType::_method_)>(BNMCustomMethod_##_method_).Invoke(__VA_ARGS__)
+
+/**
+    @brief Automatically defines a custom field with type deduced from C++ field type.
+    @param _field_ Field name inside the class.
+*/
+#define BNM_CustomFieldAuto(_field_) \
+    BNM_CustomField(_field_, BNM::Defaults::Get<decltype(_BNMCustomClassType::_field_)>(), #_field_)
+
+/**
+    @brief Automatically registers the C++ destructor as the IL2CPP Finalize method.
+*/
+#define BNM_CustomFinalizer() \
+    void _BNM_Finalize() { this->~_BNMCustomClassType(); } \
+    BNM_CustomMethod(_BNM_Finalize, false, BNM::Defaults::Get<void>(), "Finalize")
+
+/**
+    @brief Automatically binds a BNM::CustomEvent field to IL2CPP add_ and remove_ methods.
+    @param _event_ CustomEvent field name.
+    @param _delegate_class_ BNM::CompileTimeClass of the C# delegate.
+*/
+#define BNM_CustomEventBind(_event_, _delegate_class_) \
+    void _BNM_Add_##_event_(BNM::IL2CPP::Il2CppObject *del) { _event_.Add((BNM::Delegate<void> *) del); } \
+    void _BNM_Remove_##_event_(BNM::IL2CPP::Il2CppObject *del) { _event_.Remove((BNM::Delegate<void> *) del); } \
+    BNM_CustomMethod(_BNM_Add_##_event_, false, BNM::Defaults::Get<void>(), "add_" #_event_, _delegate_class_); \
+    BNM_CustomMethod(_BNM_Remove_##_event_, false, BNM::Defaults::Get<void>(), "remove_" #_event_, _delegate_class_)
+
 /** @} */
 #endif

@@ -121,6 +121,15 @@ namespace BNM::Structures::Mono {
         */
         static String *Empty();
 
+        /**
+            @brief Create a Mono String from std::string_view.
+            @param str Text string.
+            @return Mono String pointer.
+        */
+        static inline String *Create(const std::string_view &str) {
+            return BNM::CreateMonoString(str);
+        }
+
 #ifdef BNM_ALLOW_SELF_CHECKS
         /**
             @brief Check if string isn't null.
