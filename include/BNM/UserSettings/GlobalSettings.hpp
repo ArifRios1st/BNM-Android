@@ -4,7 +4,28 @@ static_assert(false, "ByNameModding requires C++20 and above!");
 
 #pragma once
 
-//#define UNITY_VER 56 // 5.6.4f1
+//! =========================================================================================
+//! External Configuration File Detection
+//! =========================================================================================
+#if defined(BNM_USER_CONFIG)
+#  include BNM_USER_CONFIG
+#elif defined(__has_include)
+#  if __has_include("BNM_Config.h")
+#    include "BNM_Config.h"
+#  elif __has_include("BNM_UserConfig.h")
+#    include "BNM_UserConfig.h"
+#  elif __has_include(<BNM_Config.h>)
+#    include <BNM_Config.h>
+#  elif __has_include(<BNM_UserConfig.h>)
+#    include <BNM_UserConfig.h>
+#  endif
+#endif
+
+//! =========================================================================================
+//! Unity Version Configuration
+//! =========================================================================================
+#ifndef UNITY_VER
+//#define UNITY_VER 56  // 5.6.4f1
 //#define UNITY_VER 171 // 2017.1.x
 //#define UNITY_VER 172 // 2017.2.x - 2017.4.x
 //#define UNITY_VER 181 // 2018.1.x
@@ -16,227 +37,255 @@ static_assert(false, "ByNameModding requires C++20 and above!");
 //#define UNITY_VER 201 // 2020.1.x
 //#define UNITY_VER 202 // 2020.2.x - 2020.3.19
 //#define UNITY_VER 203 // 2020.3.20 - 2020.3.xx
-//#define UNITY_VER 211 // 2021.1.x (Need set UNITY_PATCH_VER to 24 if x (2021.1.x) >= 24)
+//#define UNITY_VER 211 // 2021.1.x (Set UNITY_PATCH_VER = 24 if patch >= 24)
 //#define UNITY_VER 212 // 2021.2.x
 //#define UNITY_VER 213 // 2021.3.x
 //#define UNITY_VER 221 // 2022.1.x
 #define UNITY_VER 222 // 2022.2.x - 2022.3.x
 //#define UNITY_VER 231 // 2023.1.x
 //#define UNITY_VER 232 // 2023.2.x+
+#endif
 
-#define UNITY_PATCH_VER 32 // Для особых случаев (For special cases)
+#ifndef UNITY_PATCH_VER
+#define UNITY_PATCH_VER 32 // For special patch versions
+#endif
 
-//! Включить устаревший код (если есть)
 //! Allow to use deprecated methods (if any)
 // #define BNM_DEPRECATED
 
-//! Разрешить использование кода для синхронизации потоков
-//! Рекомендуется отключать при внутреннем использовании
-//! Allow the use of code to synchronize streams
-//! It is recommended to disable it during internal use
+//! Allow thread synchronization when accessing BNM from multiple threads
 // #define BNM_ALLOW_MULTI_THREADING_SYNC
 
-//! Для System.Collections.Generic.Dictionary (Dictionary)
-//! Если игра использует .NET 3.5 раскомментируйте этот define
-//! .NET 3.5 устарел, но часть старых игр используют его
-//! For the System.Collections.Generic.Dictionary (Dictionary)
-//! If game uses .NET 3.5 uncomment this define
-//! .NET 3.5 is outdated, but some older games use it
+//! For legacy .NET 3.5 Dictionary compatibility
 // #define BNM_DOTNET35
 
-//! Включить код создания новых классов и модификации существующих
-//! Allow code for creating new classes and modifying existing ones
+//! =========================================================================================
+//! Modular Feature Bindings
+//! =========================================================================================
+#ifndef BNM_MANUAL_MODULES
+
+//! Code for creating new classes and modifying existing ones
+#if !defined(BNM_CLASSES_MANAGEMENT) && !defined(BNM_DISABLE_CLASSES_MANAGEMENT) && !defined(BNM_NO_CLASSES_MANAGEMENT)
 #define BNM_CLASSES_MANAGEMENT
+#endif
 
-//! Включить код создания coroutine. ТРЕБУЕТСЯ ClassesManagement!
-//! Enable coroutine creation code. REQUIRES ClassesManagement!
+//! Coroutine creation code (Requires ClassesManagement!)
+#if defined(BNM_CLASSES_MANAGEMENT) && !defined(BNM_COROUTINE) && !defined(BNM_DISABLE_COROUTINE) && !defined(BNM_NO_COROUTINE)
 #define BNM_COROUTINE
+#endif
 
-//! Включить структуры и методы для UnityEngine.Physics (3D Physics: Rigidbody, Collider, Raycast, dll.)
-//! Enable structures and methods for UnityEngine.Physics (3D Physics)
+//! Structures and methods for UnityEngine.Physics (3D Physics)
+#if !defined(BNM_UNITY_PHYSICS) && !defined(BNM_DISABLE_UNITY_PHYSICS) && !defined(BNM_NO_UNITY_PHYSICS)
 #define BNM_UNITY_PHYSICS
+#endif
 
-//! Включить структуры и методы для UnityEngine.Physics2D (2D Physics: Rigidbody2D, Collider2D, Raycast2D, dll.)
-//! Enable structures and methods for UnityEngine.Physics2D (2D Physics)
+//! Structures and methods for UnityEngine.Physics2D (2D Physics)
+#if !defined(BNM_UNITY_PHYSICS2D) && !defined(BNM_DISABLE_UNITY_PHYSICS2D) && !defined(BNM_NO_UNITY_PHYSICS2D)
 #define BNM_UNITY_PHYSICS2D
+#endif
 
-//! Включить структуры и методы для UnityEngine.UI (uGUI: RectTransform, Canvas, Text, Image, Button, Slider, dll.)
-//! Enable structures and methods for UnityEngine.UI (uGUI)
+//! Structures and methods for UnityEngine.UI (uGUI)
+#if !defined(BNM_UNITY_UI) && !defined(BNM_DISABLE_UNITY_UI) && !defined(BNM_NO_UNITY_UI)
 #define BNM_UNITY_UI
+#endif
 
-//! Включить структуры и методы для TextMeshPro (TMP_Text, TextMeshPro, TextMeshProUGUI, TMP_InputField)
-//! Enable structures and methods for TextMeshPro
+//! Structures and methods for TextMeshPro
+#if !defined(BNM_UNITY_TEXTMESHPRO) && !defined(BNM_DISABLE_UNITY_TEXTMESHPRO) && !defined(BNM_NO_UNITY_TEXTMESHPRO)
 #define BNM_UNITY_TEXTMESHPRO
+#endif
 
-//! Включить структуры и методы для UnityEngine.Renderer, MeshRenderer, SkinnedMeshRenderer, SpriteRenderer, Mesh
-//! Enable structures and methods for Renderers (MeshRenderer, SkinnedMeshRenderer, SpriteRenderer, Mesh)
+//! Structures and methods for Renderers (MeshRenderer, SkinnedMeshRenderer, SpriteRenderer, Mesh)
+#if !defined(BNM_UNITY_RENDERERS) && !defined(BNM_DISABLE_UNITY_RENDERERS) && !defined(BNM_NO_UNITY_RENDERERS)
 #define BNM_UNITY_RENDERERS
+#endif
 
-//! Включить структуры и методы для UnityEngine.Audio (AudioSource, AudioClip, AudioListener)
-//! Enable structures and methods for UnityEngine.Audio (AudioSource, AudioClip, AudioListener)
+//! Structures and methods for UnityEngine.Audio (AudioSource, AudioClip, AudioListener)
+#if !defined(BNM_UNITY_AUDIO) && !defined(BNM_DISABLE_UNITY_AUDIO) && !defined(BNM_NO_UNITY_AUDIO)
 #define BNM_UNITY_AUDIO
+#endif
 
-//! Включить структуры и методы для UnityEngine.Animation (Animator, Animation, AnimationClip, AnimationState)
-//! Enable structures and methods for UnityEngine.Animation (Animator, Animation)
+//! Structures and methods for UnityEngine.Animation (Animator, Animation)
+#if !defined(BNM_UNITY_ANIMATION) && !defined(BNM_DISABLE_UNITY_ANIMATION) && !defined(BNM_NO_UNITY_ANIMATION)
 #define BNM_UNITY_ANIMATION
+#endif
 
-//! Отключить авто подмену через таблицу виртуальных методов в ClassesManagement
+#endif // BNM_MANUAL_MODULES
+
 //! Disable auto hook via virtual method table in ClassesManagement
 // #define BNM_AUTO_HOOK_DISABLE_VIRTUAL_HOOK
 
-//! Старые добрые времена...
 //! The good old days...
 // #define BNM_OLD_GOOD_DAYS
 
-//! Использовать аллокатор il2cpp для Mono массивов вместо базового
-//! Use il2cpp's allocator for Mono arrays instead of basic
+//! Use il2cpp allocator for Mono arrays instead of standard allocator
+#if !defined(BNM_USE_IL2CPP_ALLOCATOR) && !defined(BNM_DISABLE_IL2CPP_ALLOCATOR) && !defined(BNM_NO_IL2CPP_ALLOCATOR)
 #define BNM_USE_IL2CPP_ALLOCATOR
+#endif
 
 #ifndef NDEBUG
 
-//! Методы str() в структурах
 //! str() methods in structures
+#ifndef BNM_ALLOW_STR_METHODS
 #define BNM_ALLOW_STR_METHODS
+#endif
 
-//! Использовать signal в IsAllocated
-//! Use signal in IsAllocated
+//! Use signal handling in IsAllocated
+#ifndef BNM_ALLOW_SAFE_IS_ALLOCATED
 #define BNM_ALLOW_SAFE_IS_ALLOCATED
+#endif
 
-//! Проверять объекты mono в их методах
-//! Check mono's objects in their methods
+//! Check mono objects in methods
+#ifndef BNM_ALLOW_SELF_CHECKS
 #define BNM_ALLOW_SELF_CHECKS
+#endif
 
-//! Проверять классы при установке объекта полям и методам
 //! Check classes when setting an instance to fields and methods
+#ifndef BNM_CHECK_INSTANCE_TYPE
 #define BNM_CHECK_INSTANCE_TYPE
+#endif
 
+#ifndef BNM_DEBUG
 #define BNM_DEBUG
+#endif
 
+#ifndef BNM_INFO
 #define BNM_INFO
+#endif
 
+#ifndef BNM_ERROR
 #define BNM_ERROR
+#endif
 
+#ifndef BNM_WARNING
 #define BNM_WARNING
+#endif
 
 #endif
 
-//! Добавьте ваш шифровщик строк
-//! Add your string encryptor
+//! Custom string encryptor
+#ifndef BNM_OBFUSCATE
 #define BNM_OBFUSCATE(str) str // const char *
-//! Data obfuscated using this macro, can be freed, after BNM loaded. Only for advanced users! If you don't know what and how, just use your basic macro here.
-//! Данные, защифрованне этим define, могут быть удалены после загрузки BNM. Только для опытных пользователей! Если вы не знаете, что и как, просто используйте свой базовый define.
+#endif
+
+//! Temporary data obfuscation macro (can be freed after BNM initialization)
+#ifndef BNM_OBFUSCATE_TMP
 #define BNM_OBFUSCATE_TMP(str) str // const char *
+#endif
 
-// Shadowhook
-/*
+//! =========================================================================================
+//! Hooking Framework Integration (Macro Function Binding)
+//! =========================================================================================
+#if defined(BNM_HOOK)
 template<typename PTR_T, typename NEW_T, typename T_OLD>
 inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) {
-    if ((void *) ptr != nullptr) return shadowhook_hook_func_addr((void *)ptr, (void *) newMethod, (void **) &oldBytes);
+    if ((void *) ptr != nullptr) return (void *) BNM_HOOK((void *) ptr, (void *) newMethod, (void **) &oldBytes);
     return nullptr;
 }
 
 template<typename PTR_T, typename NEW_T, typename T_OLD>
 inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
-    if ((void *) ptr != nullptr) return shadowhook_hook_func_addr((void *)ptr, (void *) newMethod, (void **) &oldBytes);
+    if ((void *) ptr != nullptr) return (void *) BNM_HOOK((void *) ptr, (void *) newMethod, (void **) &oldBytes);
     return nullptr;
 }
 
 template<typename PTR_T>
 inline void Unhook(PTR_T ptr) {
-    if ((void *) ptr != nullptr) shadowhook_unhook((void *)ptr);
+#if defined(BNM_UNHOOK)
+    if ((void *) ptr != nullptr) BNM_UNHOOK((void *) ptr);
+#else
+    ((void) 0);
+#endif
 }
-*/
-
-
-// Dobby
-/*
-#include <dobby.h>
-
-template<typename PTR_T, typename NEW_T, typename T_OLD>
-inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) {
-    if ((void *) ptr != nullptr) DobbyHook((void *)ptr, (void *) newMethod, (void **) &oldBytes);
-    return (void *) ptr;
-}
-
-template<typename PTR_T, typename NEW_T, typename T_OLD>
-inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
-    if ((void *) ptr != nullptr) DobbyHook((void *)ptr, (void *) newMethod, (void **) &oldBytes);
-    return (void *) ptr;
-}
-
-template<typename PTR_T>
-inline void Unhook(PTR_T ptr) {
-    if ((void *) ptr != nullptr) DobbyDestroy((void *)ptr);
-}
-*/
-
-#ifdef BNM_TEST_HOOKING
-struct Dl_info { const char *dli_fname{}; void *dli_fbase{}; const char *dli_sname{}; void *dli_saddr{}; };
+#elif defined(BNM_TEST_HOOKING)
 template<typename PTR_T, typename NEW_T, typename T_OLD>
 inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) { return nullptr; }
 template<typename PTR_T, typename NEW_T, typename T_OLD>
 inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) { return nullptr; }
 template<typename PTR_T>
 inline void Unhook(PTR_T ptr) {}
+#elif defined(BNM_DISABLE_HOOKING) || defined(BNM_NO_HOOKING)
+template<typename PTR_T, typename NEW_T, typename T_OLD>
+inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) { return nullptr; }
+template<typename PTR_T, typename NEW_T, typename T_OLD>
+inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) { return nullptr; }
+template<typename PTR_T>
+inline void Unhook(PTR_T ptr) {}
+#else
+#include <cassert>
+static_assert(false, "No hooking software configured! Define BNM_HOOK(target, replace, orig) and optionally BNM_UNHOOK(ptr) in BNM_Config.h, or define BNM_DISABLE_HOOKING.");
+#endif
+
+//! =========================================================================================
+//! Dynamic Loader Integration (dlopen, dlsym, dlclose, dladdr, Dl_info)
+//! =========================================================================================
+#if defined(BNM_TEST_HOOKING)
+struct Dl_info { const char *dli_fname{}; void *dli_fbase{}; const char *dli_sname{}; void *dli_saddr{}; };
 #define BNM_dlopen(x, y) nullptr
 #define BNM_dlsym(x, y) nullptr
 #define BNM_dlclose(x) 0
 #define BNM_dladdr(x, y) 0
+#define BNM_Dl_info Dl_info
 #else
-// Dummy
-#include <cassert>
 
-static_assert(false, "No hooking software!");
+#ifndef BNM_dlopen
+#  include <dlfcn.h>
+#  define BNM_dlopen(name, flags)    dlopen(name, flags)
+#endif
 
-template<typename PTR_T, typename NEW_T, typename T_OLD>
-inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &oldBytes) {
-    if ((void *) ptr != nullptr) ((void)0);
-    return nullptr;
-}
+#ifndef BNM_dlsym
+#  include <dlfcn.h>
+#  define BNM_dlsym(handle, symbol)  dlsym(handle, symbol)
+#endif
 
-template<typename PTR_T, typename NEW_T, typename T_OLD>
-inline void *BasicHook(PTR_T ptr, NEW_T newMethod, T_OLD &&oldBytes) {
-    if ((void *) ptr != nullptr) ((void)0);
-    return nullptr;
-}
+#ifndef BNM_dlclose
+#  include <dlfcn.h>
+#  define BNM_dlclose(handle)        dlclose(handle)
+#endif
 
-template<typename PTR_T>
-inline void Unhook(PTR_T ptr) {
-    if ((void *) ptr != nullptr) ((void)0);
-}
+#ifndef BNM_dladdr
+#  include <dlfcn.h>
+#  define BNM_dladdr(addr, info)     dladdr(addr, info)
+#endif
 
-#include <dlfcn.h>
+#ifndef BNM_Dl_info
+#  include <dlfcn.h>
+#  define BNM_Dl_info                Dl_info
+#endif
 
-// Если вам нужно скрыть вызовы dlfcn или использовать ваш dl для загрузки BNM в игре извне
-// If you need to hide dlfcn calls or use your dl to load BNM in the game from the outside
-#define BNM_dlopen dlopen
-#define BNM_dlsym dlsym
-#define BNM_dlclose dlclose
-#define BNM_dladdr dladdr
 #endif
 
 #include <cstdlib>
 
-// Если вам нужно скрыть методы работы с памятью
-// If you need to hide memory management methods
+// Custom memory management
+#ifndef BNM_malloc
 #define BNM_malloc malloc
-#define BNM_free free
-
-#ifdef __ANDROID__
-#include <android/log.h>
-#define BNM_PRINT_LOG(prio, ...) ((void)__android_log_print(prio, BNM_TAG, __VA_ARGS__))
-#else
-#include <cstdio>
-#define BNM_PRINT_LOG(prio, ...) ((void)printf(__VA_ARGS__))
 #endif
 
+#ifndef BNM_free
+#define BNM_free free
+#endif
+
+#ifndef BNM_TAG
 #define BNM_TAG "ByNameModding"
+#endif
+
+#ifndef BNM_PRINT_LOG
+#  ifdef __ANDROID__
+#    include <android/log.h>
+#    define BNM_PRINT_LOG(prio, ...) ((void)__android_log_print(prio, BNM_TAG, __VA_ARGS__))
+#  else
+#    include <cstdio>
+#    define BNM_PRINT_LOG(prio, ...) ((void)printf(__VA_ARGS__))
+#  endif
+#endif
 
 #ifdef BNM_ALLOW_SELF_CHECKS
 #define BNM_CHECK_SELF(returnValue) if (!SelfCheck()) return returnValue
 #else
 #define BNM_CHECK_SELF(returnValue) ((void)0)
 #endif
+
+#if !defined(BNM_DISABLE_ALL_LOGS) && !defined(BNM_NO_LOG)
 
 #ifdef BNM_INFO
 #define BNM_LOG_INFO(...) BNM_PRINT_LOG(4, __VA_ARGS__)
@@ -257,7 +306,7 @@ inline void Unhook(PTR_T ptr) {
 #define BNM_LOG_ERR_IF(condition, ...) if (condition) BNM_PRINT_LOG(6, __VA_ARGS__)
 #else
 #define BNM_LOG_ERR(...) ((void)0)
-#define BNM_LOG_ERR_IF(condition, ...) ((void)0)
+#define BNM_LOG_ERR_IF(...) ((void)0)
 #endif
 
 #ifdef BNM_WARNING
@@ -265,7 +314,19 @@ inline void Unhook(PTR_T ptr) {
 #define BNM_LOG_WARN_IF(condition, ...) if (condition) BNM_PRINT_LOG(5, __VA_ARGS__)
 #else
 #define BNM_LOG_WARN(...) ((void)0)
-#define BNM_LOG_WARN_IF(condition, ...) ((void)0)
+#define BNM_LOG_WARN_IF(...) ((void)0)
+#endif
+
+#else // BNM_DISABLE_ALL_LOGS
+
+#define BNM_LOG_INFO(...) ((void)0)
+#define BNM_LOG_DEBUG(...) ((void)0)
+#define BNM_LOG_DEBUG_IF(...) ((void)0)
+#define BNM_LOG_ERR(...) ((void)0)
+#define BNM_LOG_ERR_IF(...) ((void)0)
+#define BNM_LOG_WARN(...) ((void)0)
+#define BNM_LOG_WARN_IF(...) ((void)0)
+
 #endif
 
 namespace BNM {

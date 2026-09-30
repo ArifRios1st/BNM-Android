@@ -284,7 +284,7 @@ static void EmptyMethod() {}
 #ifdef BNM_DEBUG
 static void *OffsetInLib(void *offsetInMemory) {
     if (offsetInMemory == nullptr) return nullptr;
-    Dl_info info; BNM_dladdr(offsetInMemory, &info);
+    BNM_Dl_info info; BNM_dladdr(offsetInMemory, &info);
     return (void *) ((BNM_PTR) offsetInMemory - (BNM_PTR) info.dli_fbase);
 }
 
