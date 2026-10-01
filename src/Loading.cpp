@@ -4,6 +4,9 @@
 #include <BNM/Field.hpp>
 
 #include <Internals.hpp>
+#include <AssemblerUtils.hpp>
+#include <cstdint>
+#include <cstring>
 
 using namespace BNM;
 
@@ -33,14 +36,14 @@ void Internal::Load() {
     states.state = true;
 
     // Call all events after loading il2cpp
-    auto events = onIl2CppLoaded;
-    if (events.IsEmpty()) return;
-    auto current = events.lastElement->next;
-    do {
-        current->value();
+    if (!onIl2CppLoaded.IsEmpty()) {
+        auto current = onIl2CppLoaded.lastElement->next;
+        do {
+            if (current->value) current->value();
 
-        current = current->next;
-    } while (current != events.lastElement->next);
+            current = current->next;
+        } while (current != onIl2CppLoaded.lastElement->next);
+    }
 }
 
 void *Internal::GetIl2CppMethod(const char *methodName) {
@@ -52,6 +55,7 @@ void Loading::AllowLateInitHook() {
 }
 
 static bool CheckHandle(void *handle) {
+    if (!handle) return false;
     void *init = BNM_dlsym(handle, BNM_OBFUSCATE_TMP(BNM_IL2CPP_API_il2cpp_init));
     if (!init) return false;
 
@@ -87,18 +91,31 @@ bool Loading::TryLoadByJNI(JNIEnv *env, jobject context) {
 
     if (context == nullptr) {
         jclass activityThread = env->FindClass(BNM_OBFUSCATE_TMP("android/app/ActivityThread"));
+        if (!activityThread) return false;
         auto currentActivityThread = env->CallStaticObjectMethod(activityThread, env->GetStaticMethodID(activityThread, BNM_OBFUSCATE_TMP("currentActivityThread"), BNM_OBFUSCATE_TMP("()Landroid/app/ActivityThread;")));
+        if (!currentActivityThread) {
+            env->DeleteLocalRef(activityThread);
+            return false;
+        }
         context = env->CallObjectMethod(currentActivityThread, env->GetMethodID(activityThread, BNM_OBFUSCATE_TMP("getApplication"), BNM_OBFUSCATE_TMP("()Landroid/app/Application;")));
         env->DeleteLocalRef(currentActivityThread);
+        env->DeleteLocalRef(activityThread);
+        if (!context) return false;
     }
 
     auto applicationInfo = env->CallObjectMethod(context, env->GetMethodID(env->GetObjectClass(context), BNM_OBFUSCATE_TMP("getApplicationInfo"), BNM_OBFUSCATE_TMP("()Landroid/content/pm/ApplicationInfo;")));
+    if (!applicationInfo) return false;
     auto applicationInfoClass = env->GetObjectClass(applicationInfo);
 
     auto flags = env->GetIntField(applicationInfo, env->GetFieldID(applicationInfoClass, BNM_OBFUSCATE_TMP("flags"), BNM_OBFUSCATE_TMP("I")));
     bool isLibrariesExtracted = (flags & 0x10000000) == 0x10000000; // ApplicationInfo.FLAG_EXTRACT_NATIVE_LIBS
 
     auto jDir = (jstring) env->GetObjectField(applicationInfo, env->GetFieldID(applicationInfoClass, isLibrariesExtracted ? BNM_OBFUSCATE_TMP("nativeLibraryDir") : BNM_OBFUSCATE_TMP("sourceDir"), BNM_OBFUSCATE_TMP("Ljava/lang/String;")));
+    if (!jDir) {
+        env->DeleteLocalRef(applicationInfo);
+        env->DeleteLocalRef(applicationInfoClass);
+        return false;
+    }
 
     auto cDir = std::string_view(env->GetStringUTFChars(jDir, nullptr));
     env->DeleteLocalRef(applicationInfo); env->DeleteLocalRef(applicationInfoClass);
@@ -136,7 +153,6 @@ void Loading::SetMethodFinder(BNM::Loading::MethodFinder finderMethod, void *use
 }
 
 bool Loading::TryLoadByUsersFinder() {
-
     auto init = Internal::currentFinderMethod(BNM_OBFUSCATE_TMP(BNM_IL2CPP_API_il2cpp_init), Internal::currentFinderData);
     if (!init) return false;
 
@@ -151,115 +167,6 @@ void Loading::TrySetupByUsersFinder() {
     return Internal::Load();
 }
 
-namespace AssemblerUtils {
-    // Reverse hexadecimal string (from 001122 to 221100)
-    static std::string ReverseHexString(const std::string &hex) {
-        std::string out{};
-        for (size_t i = 0; i < hex.length(); i += 2) out.insert(0, hex.substr(i, 2));
-        return out;
-    }
-
-    // Convert hexadecimal string to a value
-    static BNM_PTR HexStr2Value(const std::string &hex) { return strtoull(hex.c_str(), nullptr, 16); }
-
-#if defined(__ARM_ARCH_7A__)
-
-    // Check if the assembly is `bl ...`or `b ...`
-    static bool IsBranchHex(const std::string &hex) {
-        BNM_PTR hexW = HexStr2Value(ReverseHexString(hex));
-        return (hexW & 0x0A000000) == 0x0A000000;
-    }
-
-#elif defined(__aarch64__)
-
-    // Check if the assembly is `bl ...`or `b ...`
-    static bool IsBranchHex(const std::string &hex) {
-        BNM_PTR hexW = HexStr2Value(ReverseHexString(hex));
-        return (hexW & 0xFC000000) == 0x14000000 || (hexW & 0xFC000000) == 0x94000000;
-    }
-
-#elif defined(__i386__) || defined(__x86_64__)
-
-    // Check if the assembly is `call ...`
-    static bool IsCallHex(const std::string &hex) { return hex[0] == 'E' && hex[1] == '8'; }
-#elif defined(__riscv)
-#error "Is it released for Android?"
-#else
-#error "BNM only supports arm64, arm, x86 and x86_64"
-#endif
-    static const char *hexChars = BNM_OBFUSCATE_TMP("0123456789ABCDEF");
-    // Прочитать память, как шестнадцатеричную строку
-    // Read the memory as a hexadecimal string
-    template<size_t len>
-    static std::string ReadMemory(BNM_PTR address) {
-        char temp[len]; memset(temp, 0, len);
-        std::string ret{};
-        if (memcpy(temp, (void *)address, len) == nullptr) return ret;
-        ret.resize(len * 2, 0);
-        auto buf = (char *)ret.data();
-        for (size_t i = 0; i < len; ++i) {
-            *buf++ = hexChars[temp[i] >> 4];
-            *buf++ = hexChars[temp[i] & 0x0F];
-        }
-        return ret;
-    }
-
-    // Decode b or bl and get the address it goes to
-    static bool DecodeBranchOrCall(const std::string &hex, BNM_PTR offset, BNM_PTR &outOffset) {
-#if defined(__ARM_ARCH_7A__) || defined(__aarch64__)
-        if (!IsBranchHex(hex)) return false;
-#if defined(__aarch64__)
-        uint8_t add = 0;
-#else
-        uint8_t add = 8;
-#endif
-        // This line is based on the capstone code
-        outOffset = ((int32_t)(((((HexStr2Value(ReverseHexString(hex))) & (((uint32_t)1 << 24) - 1) << 0) >> 0) << 2) << (32 - 26)) >> (32 - 26)) + offset + add;
-#elif defined(__i386__) || defined(__x86_64__)
-        if (!IsCallHex(hex)) return false;
-        // Address + address from the `call` + size of the instruction
-        outOffset = offset + HexStr2Value(ReverseHexString(hex).substr(0, 8)) + 5;
-#else
-#error "BNM only supports arm64, arm, x86 and x86_64"
-        return false;
-#endif
-        return true;
-    }
-
-    // Goes through memory and tries to find b-, bl- or call instructions
-    // Then gets the address they go to
-    // index: 1 is the first, 2 is the second, etc.
-    static BNM_PTR FindNextJump(BNM_PTR start, uint8_t index) {
-#if defined(__ARM_ARCH_7A__) || defined(__aarch64__)
-        BNM_PTR offset = 0;
-        std::string curHex = ReadMemory<4>(start);
-        BNM_PTR outOffset = 0;
-        bool out;
-        while (!(out = DecodeBranchOrCall(curHex, start + offset, outOffset)) || index != 1) {
-            offset += 4;
-            curHex = ReadMemory<4>(start + offset);
-            if (out) index--;
-        }
-        return outOffset;
-#elif defined(__i386__) || defined(__x86_64__)
-        BNM_PTR offset = 0;
-        std::string curHex = ReadMemory<1>(start);
-        BNM_PTR outOffset = 0;
-        bool out;
-        while (!(out = IsCallHex(curHex)) || index != 1) {
-            offset += 1;
-            curHex = ReadMemory<1>(start + offset);
-            if (out) index--;
-        }
-        DecodeBranchOrCall(ReadMemory<5>(start + offset), start + offset, outOffset);
-        return outOffset;
-#else
-#error "BNM only supports arm64, arm, x86 and x86_64"
-        return 0;
-#endif
-    }
-}
-
 void Internal::LateInit(void *il2cpp_class_from_il2cpp_type_addr) {
     if (!il2cpp_class_from_il2cpp_type_addr) return;
 
@@ -271,7 +178,7 @@ void Internal::LateInit(void *il2cpp_class_from_il2cpp_type_addr) {
 #endif
 
     //! il2cpp::vm::Class::FromIl2CppType
-    // Путь (Path):
+    // Path:
     // il2cpp_class_from_il2cpp_type ->
     // il2cpp::vm::Class::FromIl2CppType
     auto from_il2cpp_type = AssemblerUtils::FindNextJump((BNM_PTR) il2cpp_class_from_il2cpp_type_addr, count);
@@ -489,10 +396,24 @@ void Internal::SetupBNM() {
     customListTemplateClass = listClass;
 }
 
+bool Loading::IsLoaded() noexcept {
+    return Internal::states.state;
+}
+
+void *Loading::GetIl2CppLibraryHandle() noexcept {
+    return Internal::il2cppLibraryHandle;
+}
+
 void Loading::AddOnLoadedEvent(void (*event)()) {
-    if (event) Internal::onIl2CppLoaded.Add(event);
+    if (!event) return;
+    if (Internal::states.state) {
+        event();
+    } else {
+        Internal::onIl2CppLoaded.Add(event);
+    }
 }
 
 void Loading::ClearOnLoadedEvents() {
     Internal::onIl2CppLoaded.Clear();
 }
+
