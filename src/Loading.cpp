@@ -236,6 +236,7 @@ void Internal::SetupBNM() {
     INIT_IL2CPP_API(il2cpp_resolve_icall);
     INIT_IL2CPP_API(il2cpp_runtime_invoke);
     INIT_IL2CPP_API(il2cpp_domain_get);
+    INIT_IL2CPP_API(il2cpp_domain_get_assemblies);
     INIT_IL2CPP_API(il2cpp_thread_current);
     INIT_IL2CPP_API(il2cpp_thread_attach);
     INIT_IL2CPP_API(il2cpp_thread_detach);
@@ -320,7 +321,12 @@ void Internal::SetupBNM() {
     // il2cpp_domain_get_assemblies ->
     // il2cpp::vm::Assembly::GetAllAssemblies
     auto adr = (BNM_PTR) GetIl2CppMethod(BNM_OBFUSCATE_TMP(BNM_IL2CPP_API_il2cpp_domain_get_assemblies));
-    il2cppMethods.Assembly$$GetAllAssemblies = (std::vector<IL2CPP::Il2CppAssembly *> *(*)())(AssemblerUtils::FindNextJump(adr, count));
+    if (adr) {
+        auto jumpTarget = AssemblerUtils::FindNextJump(adr, count);
+        if (jumpTarget) {
+            il2cppMethods.Assembly$$GetAllAssemblies = (std::vector<IL2CPP::Il2CppAssembly *> *(*)()) jumpTarget;
+        }
+    }
     BNM_LOG_DEBUG(DBG_BNM_MSG_SetupBNM_Assembly_GetAllAssemblies, OffsetInLib((void *)il2cppMethods.Assembly$$GetAllAssemblies));
 
     auto mscorlib = il2cppMethods.il2cpp_get_corlib();

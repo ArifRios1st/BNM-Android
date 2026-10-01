@@ -26,7 +26,7 @@ Class::Class(const MonoType *type) {
 Class::Class(const CompileTimeClass &compileTimeClass) { _data = compileTimeClass; }
 
 static IL2CPP::Il2CppClass *TryGetClassWithoutImage(const std::string_view &_namespace, const std::string_view &_name) {
-    auto &assemblies = *Internal::il2cppMethods.Assembly$$GetAllAssemblies();
+    auto &assemblies = Internal::GetAllAssemblies();
 
     for (auto assembly : assemblies) {
         auto image = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
@@ -409,7 +409,7 @@ namespace CompileTimeClassProcessors {
 
         BNM::Image image{};
 
-        auto &assemblies = *Internal::il2cppMethods.Assembly$$GetAllAssemblies();
+        auto &assemblies = Internal::GetAllAssemblies();
         for (auto assembly: assemblies) {
             auto currentImage = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
             if (!Internal::CompareImageName(currentImage, classInfo->_imageName)) continue;

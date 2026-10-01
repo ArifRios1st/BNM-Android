@@ -180,7 +180,7 @@ static const char *baseImageName = BNM_OBFUSCATE("Assembly-CSharp.dll");
 static void CreateClass(MANAGEMENT_STRUCTURES::CustomClass *customClass, const CustomClassInfo &classInfo) {
     Image image{};
     if (classInfo._imageName) {
-        auto &assemblies = *Internal::il2cppMethods.Assembly$$GetAllAssemblies();
+        auto &assemblies = Internal::GetAllAssemblies();
         for (auto assembly: assemblies) {
             auto currentImage = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
             if (!Internal::CompareImageName(currentImage, classInfo._imageName)) continue;
@@ -595,7 +595,13 @@ static IL2CPP::Il2CppImage *MakeImage(std::string_view imageName) {
     newImg->nameToClassHashTable = (decltype(newImg->nameToClassHashTable)) -0x424e4d;
 
     // Add an assembly to the list
-    Internal::il2cppMethods.Assembly$$GetAllAssemblies()->push_back(newAsm);
+    Internal::GetAllAssemblies().push_back(newAsm);
+    if (Internal::il2cppMethods.Assembly$$GetAllAssemblies) {
+        auto origVec = Internal::il2cppMethods.Assembly$$GetAllAssemblies();
+        if (origVec && origVec != &Internal::GetAllAssemblies()) {
+            origVec->push_back(newAsm);
+        }
+    }
 
     BNM_LOG_INFO(DBG_BNM_MSG_ClassesManagement_MakeImage_Added_Image, imageName.data());
 

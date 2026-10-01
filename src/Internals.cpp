@@ -56,8 +56,33 @@ namespace BNM::Internal {
 
 using namespace BNM;
 
+static std::vector<BNM::IL2CPP::Il2CppAssembly *> fallbackAssembliesList{};
+
+std::vector<BNM::IL2CPP::Il2CppAssembly *> &Internal::GetAllAssemblies() {
+    // 1. Direct internal il2cpp::vm::Assembly::GetAllAssemblies if available
+    if (Internal::il2cppMethods.Assembly$$GetAllAssemblies) {
+        auto assembliesPtr = Internal::il2cppMethods.Assembly$$GetAllAssemblies();
+        if (assembliesPtr) return *assembliesPtr;
+    }
+
+    // 2. Fallback to exported il2cpp_domain_get_assemblies API (Issues #177 & #179 fix)
+    if (Internal::il2cppMethods.il2cpp_domain_get_assemblies && Internal::il2cppMethods.il2cpp_domain_get) {
+        auto domain = Internal::il2cppMethods.il2cpp_domain_get();
+        if (domain) {
+            size_t count = 0;
+            auto assembliesArray = Internal::il2cppMethods.il2cpp_domain_get_assemblies(domain, &count);
+            if (assembliesArray && count > 0) {
+                fallbackAssembliesList.assign((IL2CPP::Il2CppAssembly **)assembliesArray, (IL2CPP::Il2CppAssembly **)assembliesArray + count);
+                return fallbackAssembliesList;
+            }
+        }
+    }
+
+    return fallbackAssembliesList;
+}
+
 IL2CPP::Il2CppImage *Internal::TryGetImage(const std::string_view &_name) {
-    auto &assemblies = *Internal::il2cppMethods.Assembly$$GetAllAssemblies();
+    auto &assemblies = Internal::GetAllAssemblies();
 
     for (auto assembly : assemblies) {
         auto currentImage = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
