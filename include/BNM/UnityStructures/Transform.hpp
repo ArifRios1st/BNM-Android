@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <string_view>
 #include "Component.hpp"
 #include "Vector3.hpp"
 #include "Quaternion.hpp"
@@ -288,6 +290,22 @@ namespace BNM::UnityEngine {
             if (!IsValid()) return nullptr;
             static auto method = BNM::Defaults::Get<Transform>().ToClass().GetMethod(BNM_OBFUSCATE("GetChild"), 1).cast<Transform *>();
             return method[(void *)this](index);
+        }
+
+        /**
+            @brief Returns all direct child transforms.
+            @return std::vector of child Transform pointers.
+        */
+        inline std::vector<Transform *> GetChildren() const {
+            std::vector<Transform *> children{};
+            if (!IsValid()) return children;
+            int count = GetChildCount();
+            children.reserve(count);
+            for (int i = 0; i < count; ++i) {
+                auto child = GetChild(i);
+                if (child) children.push_back(child);
+            }
+            return children;
         }
 
         /**

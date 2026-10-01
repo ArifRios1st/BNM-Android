@@ -25,12 +25,44 @@ Class::Class(const MonoType *type) {
 
 Class::Class(const CompileTimeClass &compileTimeClass) { _data = compileTimeClass; }
 
+static std::vector<std::string_view> SplitNestedTokens(const std::string_view &name) {
+    std::vector<std::string_view> tokens{};
+    size_t start = 0;
+    for (size_t i = 0; i < name.length(); ++i) {
+        if (name[i] == '+' || name[i] == '/') {
+            if (i > start) tokens.push_back(name.substr(start, i - start));
+            start = i + 1;
+        }
+    }
+    if (start < name.length()) tokens.push_back(name.substr(start));
+    return tokens;
+}
+
+static IL2CPP::Il2CppClass *ResolveNestedClass(IL2CPP::Il2CppClass *rootClass, const std::vector<std::string_view> &tokens) {
+    if (!rootClass || tokens.size() <= 1) return rootClass;
+    Class current(rootClass);
+    for (size_t i = 1; i < tokens.size(); ++i) {
+        current = current.GetInnerClass(tokens[i]);
+        if (!current.GetClass()) return nullptr;
+    }
+    return current.GetClass();
+}
+
 static IL2CPP::Il2CppClass *TryGetClassWithoutImage(const std::string_view &_namespace, const std::string_view &_name) {
+    auto tokens = SplitNestedTokens(_name);
+    auto rootName = tokens.empty() ? _name : tokens[0];
+
     auto &assemblies = Internal::GetAllAssemblies();
 
     for (auto assembly : assemblies) {
         auto image = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
-        if (auto _data = Internal::TryGetClassInImage(image, _namespace, _name); _data) return _data;
+        if (auto rootData = Internal::TryGetClassInImage(image, _namespace, rootName); rootData) {
+            if (tokens.size() > 1) {
+                if (auto nestedData = ResolveNestedClass(rootData, tokens); nestedData) return nestedData;
+            } else {
+                return rootData;
+            }
+        }
     }
 
     return nullptr;
@@ -48,7 +80,17 @@ Class::Class(const std::string_view &_namespace, const std::string_view &_name, 
         return;
     }
 
-    if (_data = Internal::TryGetClassInImage(image, _namespace, _name); _data) return;
+    auto tokens = SplitNestedTokens(_name);
+    auto rootName = tokens.empty() ? _name : tokens[0];
+
+    if (auto rootData = Internal::TryGetClassInImage(image, _namespace, rootName); rootData) {
+        if (tokens.size() > 1) {
+            _data = ResolveNestedClass(rootData, tokens);
+        } else {
+            _data = rootData;
+        }
+        if (_data) return;
+    }
 
     BNM_LOG_WARN(DBG_BNM_MSG_Class_Constructor_Image_NotFound, image.str().data(), _namespace.data(), _name.data());
 }
