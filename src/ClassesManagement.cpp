@@ -168,7 +168,8 @@ static void ModifyClass(MANAGEMENT_STRUCTURES::CustomClass *customClass, Class t
         klass->flags |= BNM_CLASS_ALLOCATED_FIELDS_FLAG;
 
         klass->actualSize = currentAddress;
-        klass->fields = newField;
+        klass->fields = newFields;
+        klass->field_count += newFieldsCount;
     }
 
     customClass->myClass = klass;
