@@ -41,7 +41,6 @@ add_library(
         src/MethodBase.cpp
         src/MonoStructures.cpp
         src/PropertyBase.cpp
-        src/TestDelegatesEvents.cpp
         src/UnityStructures.cpp
         src/Utils.cpp
 )
