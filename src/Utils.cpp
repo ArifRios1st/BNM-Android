@@ -10,9 +10,28 @@ Structures::Mono::String *BNM::CreateMonoString(const std::string_view &str) {
 }
 
 void *BNM::GetExternMethod(const std::string_view &str) {
-    auto ret = Internal::il2cppMethods.il2cpp_resolve_icall(str.data());
-    BNM_LOG_WARN_IF(!ret, DBG_BNM_MSG_GetExternMethod_Warn, str.data());
-    return ret;
+    if (!Internal::il2cppMethods.il2cpp_resolve_icall) return nullptr;
+
+    std::string nameStr{str};
+
+    // 1. Direct resolution with provided name
+    auto ret = Internal::il2cppMethods.il2cpp_resolve_icall(nameStr.c_str());
+    if (ret) return ret;
+
+    // 2. Transparent fallback for Unity 2023.2+ / Unity 6: try "_Injected" suffix (Issues #178 & #138)
+    if (!str.ends_with("_Injected")) {
+        std::string injectedName = nameStr + "_Injected";
+        ret = Internal::il2cppMethods.il2cpp_resolve_icall(injectedName.c_str());
+        if (ret) return ret;
+    } else {
+        // Reverse fallback: if user passed "_Injected" on older Unity versions without it
+        std::string plainName = nameStr.substr(0, nameStr.length() - 9);
+        ret = Internal::il2cppMethods.il2cpp_resolve_icall(plainName.c_str());
+        if (ret) return ret;
+    }
+
+    BNM_LOG_WARN(DBG_BNM_MSG_GetExternMethod_Warn, nameStr.c_str());
+    return nullptr;
 }
 
 bool BNM::IsLoaded() {
