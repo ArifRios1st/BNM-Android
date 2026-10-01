@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <string>
 #include <string_view>
 #include "../UserSettings/GlobalSettings.hpp"
@@ -220,6 +221,52 @@ namespace BNM::UnityEngine::SceneManagement {
             static auto method = BNM::Class(BNM_OBFUSCATE("UnityEngine.SceneManagement"), BNM_OBFUSCATE("SceneManager")).GetMethod(BNM_OBFUSCATE("get_sceneCount"), 0).cast<int>();
             if (method.IsValid()) return method();
             return 1;
+        }
+
+        /**
+            @brief Returns all root GameObjects across all active loaded scenes, and optionally DontDestroyOnLoad.
+            @param includeDontDestroyOnLoad Whether to include roots from the DontDestroyOnLoad scene.
+            @return std::vector of GameObject pointers.
+        */
+        static inline std::vector<GameObject *> GetAllRootGameObjects(bool includeDontDestroyOnLoad = true) {
+            std::vector<GameObject *> allRoots{};
+            int count = GetSceneCount();
+            for (int i = 0; i < count; ++i) {
+                auto scene = GetSceneAt(i);
+                if (!scene.IsValid() || !scene.GetIsLoaded()) continue;
+                auto rootsArr = scene.GetRootGameObjects();
+                if (rootsArr) {
+                    for (IL2CPP::il2cpp_array_size_t r = 0; r < rootsArr->capacity; ++r) {
+                        auto go = rootsArr->At(r);
+                        if (go && go->IsValid()) allRoots.push_back(go);
+                    }
+                }
+            }
+
+            if (includeDontDestroyOnLoad) {
+                auto tempGo = GameObject::Create();
+                if (tempGo && tempGo->IsValid()) {
+                    Object::DontDestroyOnLoad((Object *)tempGo);
+                    static auto getSceneMethod = BNM::Defaults::Get<GameObject>().ToClass().GetMethod(BNM_OBFUSCATE("get_scene"), 0).cast<Scene>();
+                    if (getSceneMethod.IsValid()) {
+                        auto ddolScene = getSceneMethod[(void *)tempGo]();
+                        if (ddolScene.IsValid()) {
+                            auto ddolRoots = ddolScene.GetRootGameObjects();
+                            if (ddolRoots) {
+                                for (IL2CPP::il2cpp_array_size_t r = 0; r < ddolRoots->capacity; ++r) {
+                                    auto go = ddolRoots->At(r);
+                                    if (go && go->IsValid() && (void *)go != (void *)tempGo) {
+                                        allRoots.push_back(go);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Object::Destroy((Object *)tempGo);
+                }
+            }
+
+            return allRoots;
         }
 
         /**

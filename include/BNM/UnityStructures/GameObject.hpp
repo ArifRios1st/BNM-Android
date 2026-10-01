@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <string_view>
 #include "Object.hpp"
 #include "Component.hpp"
@@ -50,6 +51,26 @@ namespace BNM::UnityEngine {
             @return Transform pointer, or nullptr if invalid.
         */
         inline Transform *transform() const { return GetTransform(); }
+
+        /**
+            @brief Returns all direct child GameObjects.
+            @return std::vector of child GameObject pointers.
+        */
+        inline std::vector<GameObject *> GetChildren() const {
+            std::vector<GameObject *> children{};
+            auto t = GetTransform();
+            if (!t) return children;
+            int count = t->GetChildCount();
+            children.reserve(count);
+            for (int i = 0; i < count; ++i) {
+                auto childTransform = t->GetChild(i);
+                if (childTransform) {
+                    auto childGo = childTransform->GetGameObject();
+                    if (childGo) children.push_back(childGo);
+                }
+            }
+            return children;
+        }
 
         /**
             @brief The layer the game object is in. (0 to 31).
