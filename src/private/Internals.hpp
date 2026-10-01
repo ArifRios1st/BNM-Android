@@ -67,6 +67,7 @@ namespace BNM::Internal {
         void *(*il2cpp_resolve_icall)(const char *){};
         void *(*il2cpp_runtime_invoke)(BNM::IL2CPP::MethodInfo *, void *, void **, BNM::IL2CPP::Il2CppException **){};
         IL2CPP::Il2CppDomain *(*il2cpp_domain_get)(){};
+        const BNM::IL2CPP::Il2CppAssembly **(*il2cpp_domain_get_assemblies)(const BNM::IL2CPP::Il2CppDomain *, size_t *){};
         IL2CPP::Il2CppThread *(*il2cpp_thread_current)(IL2CPP::Il2CppDomain *){};
         IL2CPP::Il2CppThread *(*il2cpp_thread_attach)(IL2CPP::Il2CppDomain *){};
         void (*il2cpp_thread_detach)(IL2CPP::Il2CppThread *){};
@@ -87,6 +88,8 @@ namespace BNM::Internal {
     extern BNM::Class customListTemplateClass;
     extern std::map<uint32_t, BNM::Class> customListsMap;
     extern int32_t finalizerSlot;
+
+    std::vector<BNM::IL2CPP::Il2CppAssembly *> &GetAllAssemblies();
 
     void Image$$GetTypes(const IL2CPP::Il2CppImage *image, bool exportedOnly, std::vector<BNM::IL2CPP::Il2CppClass *> *target);
 
