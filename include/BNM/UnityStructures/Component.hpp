@@ -113,7 +113,11 @@ namespace BNM::UnityEngine {
         template<typename T>
         inline T GetComponent() const {
             using CleanT = std::remove_pointer_t<T>;
-            return (T) GetComponent(BNM::Defaults::Get<CleanT>().ToClass());
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                return (T) GetComponent(CleanT::StaticClass());
+            } else {
+                return (T) GetComponent(BNM::Defaults::Get<CleanT>().ToClass());
+            }
         }
 
         /**
@@ -156,7 +160,12 @@ namespace BNM::UnityEngine {
         inline bool TryGetComponent(T &component) const {
             using CleanT = std::remove_pointer_t<T>;
             Component *comp = nullptr;
-            bool result = TryGetComponent(BNM::Defaults::Get<CleanT>().ToClass(), comp);
+            bool result = false;
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                result = TryGetComponent(CleanT::StaticClass(), comp);
+            } else {
+                result = TryGetComponent(BNM::Defaults::Get<CleanT>().ToClass(), comp);
+            }
             component = (T) comp;
             return result;
         }
@@ -197,7 +206,11 @@ namespace BNM::UnityEngine {
         template<typename T>
         inline T GetComponentInChildren(bool includeInactive = false) const {
             using CleanT = std::remove_pointer_t<T>;
-            return (T) GetComponentInChildren(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                return (T) GetComponentInChildren(CleanT::StaticClass(), includeInactive);
+            } else {
+                return (T) GetComponentInChildren(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            }
         }
 
         /**
@@ -236,7 +249,11 @@ namespace BNM::UnityEngine {
         template<typename T>
         inline T GetComponentInParent(bool includeInactive = false) const {
             using CleanT = std::remove_pointer_t<T>;
-            return (T) GetComponentInParent(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                return (T) GetComponentInParent(CleanT::StaticClass(), includeInactive);
+            } else {
+                return (T) GetComponentInParent(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            }
         }
 
         /**
@@ -271,7 +288,11 @@ namespace BNM::UnityEngine {
         template<typename T>
         inline Structures::Mono::Array<T> *GetComponents() const {
             using CleanT = std::remove_pointer_t<T>;
-            return (Structures::Mono::Array<T> *) GetComponents(BNM::Defaults::Get<CleanT>().ToClass());
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                return (Structures::Mono::Array<T> *) GetComponents(CleanT::StaticClass());
+            } else {
+                return (Structures::Mono::Array<T> *) GetComponents(BNM::Defaults::Get<CleanT>().ToClass());
+            }
         }
 
         /**
@@ -309,7 +330,11 @@ namespace BNM::UnityEngine {
         template<typename T>
         inline Structures::Mono::Array<T> *GetComponentsInChildren(bool includeInactive = false) const {
             using CleanT = std::remove_pointer_t<T>;
-            return (Structures::Mono::Array<T> *) GetComponentsInChildren(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                return (Structures::Mono::Array<T> *) GetComponentsInChildren(CleanT::StaticClass(), includeInactive);
+            } else {
+                return (Structures::Mono::Array<T> *) GetComponentsInChildren(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            }
         }
 
         /**
@@ -348,7 +373,11 @@ namespace BNM::UnityEngine {
         template<typename T>
         inline Structures::Mono::Array<T> *GetComponentsInParent(bool includeInactive = false) const {
             using CleanT = std::remove_pointer_t<T>;
-            return (Structures::Mono::Array<T> *) GetComponentsInParent(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                return (Structures::Mono::Array<T> *) GetComponentsInParent(CleanT::StaticClass(), includeInactive);
+            } else {
+                return (Structures::Mono::Array<T> *) GetComponentsInParent(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            }
         }
 
         /**
