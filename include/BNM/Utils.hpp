@@ -120,15 +120,34 @@ namespace BNM {
     /// @endcond
 
     struct CompileTimeClass;
-#ifdef BNM_DEBUG
+
     /**
-        @brief BNM namespace with utils
+        @brief Utility functions for memory operations, debugging, and binary scanning.
     */
     namespace Utils {
+#ifdef BNM_DEBUG
         void *OffsetInLib(void *);
         void LogCompileTimeClass(const BNM::CompileTimeClass &compileTimeClass);
-    }
 #endif
+
+        /**
+            @brief Scans memory for a specific byte pattern with wildcard support (AOB Scanner).
+            @param start Pointer to the start of memory range to scan.
+            @param length Number of bytes to scan.
+            @param pattern IDA-style byte pattern string (e.g. "48 8B 05 ?? ?? ?? ?? 48 85 C0" or "?? 00 00 94").
+            @return Pointer to the first matching byte sequence, or nullptr if not found.
+        */
+        void *PatternScan(const void *start, size_t length, const std::string_view &pattern);
+
+        /**
+            @brief Scans an ELF loaded module in memory for a byte pattern.
+            Automatically parses ELF headers to locate executable (.text) segments.
+            @param moduleBase Base address of the loaded shared library (e.g. from dlopen / dladdr).
+            @param pattern IDA-style byte pattern string.
+            @return Pointer to the first matching byte sequence, or nullptr if not found.
+        */
+        void *PatternScanModule(const void *moduleBase, const std::string_view &pattern);
+    }
 
     /**
         @brief Attach current thread to il2cpp VM.
