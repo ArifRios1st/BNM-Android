@@ -27,6 +27,15 @@ namespace BNM {
             IL2CPP::FieldInfo *myInfo{};
         };
 
+        // Type-safe member offset calculator for non-standard layout classes (Fix Issue #165)
+        template<typename ClassType, typename MemberType>
+        inline size_t GetMemberOffset(MemberType ClassType::*memberPtr) {
+            alignas(alignof(ClassType)) char buffer[sizeof(ClassType)]{};
+            auto objPtr = reinterpret_cast<const ClassType *>(buffer);
+            auto memberAddr = reinterpret_cast<const char *>(&(objPtr->*memberPtr));
+            return static_cast<size_t>(memberAddr - buffer);
+        }
+
         // Data about new methods
         struct CustomMethod {
             constexpr CustomMethod() = default;
@@ -284,7 +293,7 @@ struct _BNMCustomField_##_field_ : BNM::MANAGEMENT_STRUCTURES::CustomField { \
         _name = BNM_OBFUSCATE_TMP(_name_); \
         _size = sizeof(_BNMCustomClassType::_field_); \
         _type = _type_; \
-        offset = offsetof(_BNMCustomClassType, _field_); \
+        offset = (BNM_PTR) BNM::MANAGEMENT_STRUCTURES::GetMemberOffset(&_BNMCustomClassType::_field_); \
         BNMCustomClass._fields.push_back(this); \
     } \
 }; \
