@@ -56,6 +56,9 @@ namespace BNM::Internal {
 
 using namespace BNM;
 
+#ifdef BNM_ALLOW_MULTI_THREADING_SYNC
+static std::shared_mutex fallbackAssembliesMutex{};
+#endif
 static std::vector<BNM::IL2CPP::Il2CppAssembly *> fallbackAssembliesList{};
 
 std::vector<BNM::IL2CPP::Il2CppAssembly *> &Internal::GetAllAssemblies() {
@@ -72,6 +75,9 @@ std::vector<BNM::IL2CPP::Il2CppAssembly *> &Internal::GetAllAssemblies() {
             size_t count = 0;
             auto assembliesArray = Internal::il2cppMethods.il2cpp_domain_get_assemblies(domain, &count);
             if (assembliesArray && count > 0) {
+#ifdef BNM_ALLOW_MULTI_THREADING_SYNC
+                std::unique_lock lock(fallbackAssembliesMutex);
+#endif
                 fallbackAssembliesList.assign((IL2CPP::Il2CppAssembly **)assembliesArray, (IL2CPP::Il2CppAssembly **)assembliesArray + count);
                 return fallbackAssembliesList;
             }
