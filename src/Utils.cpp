@@ -172,3 +172,92 @@ void *BNM::Allocate(size_t size) {
 void BNM::Free(void *ptr) {
     return Internal::il2cppMethods.il2cpp_gc_free_fixed(ptr);
 }
+
+#ifdef __ANDROID__
+#include <elf.h>
+#include <link.h>
+#endif
+
+namespace {
+    struct PatternByte {
+        uint8_t byte{};
+        bool isWildcard = false;
+    };
+
+    static std::vector<PatternByte> ParsePatternString(const std::string_view &pattern) {
+        std::vector<PatternByte> tokens{};
+        size_t i = 0;
+        while (i < pattern.length()) {
+            while (i < pattern.length() && (pattern[i] == ' ' || pattern[i] == ',' || pattern[i] == '\t')) i++;
+            if (i >= pattern.length()) break;
+            if (pattern[i] == '?') {
+                tokens.push_back({0, true});
+                i++;
+                if (i < pattern.length() && pattern[i] == '?') i++;
+            } else {
+                char *end = nullptr;
+                auto val = (uint8_t) strtoul(&pattern[i], &end, 16);
+                tokens.push_back({val, false});
+                if (end > &pattern[i]) i += (end - &pattern[i]);
+                else i++;
+            }
+        }
+        return tokens;
+    }
+}
+
+void *BNM::Utils::PatternScan(const void *start, size_t length, const std::string_view &pattern) {
+    if (!start || length == 0 || pattern.empty()) return nullptr;
+
+    auto tokens = ParsePatternString(pattern);
+    if (tokens.empty() || length < tokens.size()) return nullptr;
+
+    const auto *bytes = (const uint8_t *) start;
+    size_t maxOffset = length - tokens.size();
+
+    for (size_t offset = 0; offset <= maxOffset; ++offset) {
+        bool match = true;
+        for (size_t t = 0; t < tokens.size(); ++t) {
+            if (!tokens[t].isWildcard && bytes[offset + t] != tokens[t].byte) {
+                match = false;
+                break;
+            }
+        }
+        if (match) return (void *)(bytes + offset);
+    }
+    return nullptr;
+}
+
+void *BNM::Utils::PatternScanModule(const void *moduleBase, const std::string_view &pattern) {
+    if (!moduleBase || pattern.empty()) return nullptr;
+
+#if defined(__ANDROID__)
+    const auto *header = (const uint8_t *) moduleBase;
+    if (memcmp(header, ELFMAG, SELFMAG) == 0) {
+#if defined(__LP64__)
+        auto *ehdr = (const Elf64_Ehdr *) moduleBase;
+        auto *phdr = (const Elf64_Phdr *) ((uintptr_t) moduleBase + ehdr->e_phoff);
+        for (size_t i = 0; i < ehdr->e_phnum; ++i) {
+            if (phdr[i].p_type == PT_LOAD && (phdr[i].p_flags & PF_X)) {
+                void *segStart = (void *) ((uintptr_t) moduleBase + phdr[i].p_vaddr);
+                void *match = PatternScan(segStart, phdr[i].p_memsz, pattern);
+                if (match) return match;
+            }
+        }
+#else
+        auto *ehdr = (const Elf32_Ehdr *) moduleBase;
+        auto *phdr = (const Elf32_Phdr *) ((uintptr_t) moduleBase + ehdr->e_phoff);
+        for (size_t i = 0; i < ehdr->e_phnum; ++i) {
+            if (phdr[i].p_type == PT_LOAD && (phdr[i].p_flags & PF_X)) {
+                void *segStart = (void *) ((uintptr_t) moduleBase + phdr[i].p_vaddr);
+                void *match = PatternScan(segStart, phdr[i].p_memsz, pattern);
+                if (match) return match;
+            }
+        }
+#endif
+    }
+#endif
+
+    // Fallback: scan default 32MB address range
+    return PatternScan(moduleBase, 0x2000000, pattern);
+}
