@@ -108,6 +108,7 @@ namespace BNM {
             struct CanvasScaler;
             struct UIBehaviour;
             struct Graphic;
+            struct GraphicRaycaster;
             struct MaskableGraphic;
             struct Text;
             struct Image;
@@ -116,6 +117,7 @@ namespace BNM {
             struct Slider;
             struct Toggle;
             struct InputField;
+            struct EventSystem;
         }
 #endif
 
@@ -178,7 +180,7 @@ namespace BNM::Defaults {
         extern ClassType Collider2D, BoxCollider2D, CircleCollider2D, Rigidbody2D, Physics2D;
 #endif
 #ifdef BNM_UNITY_UI
-        extern ClassType RectTransform, Canvas, CanvasScaler, UIBehaviour, Graphic, MaskableGraphic, Text, UIImage, Selectable, Button, Slider, Toggle, InputField;
+        extern ClassType RectTransform, Canvas, CanvasScaler, UIBehaviour, Graphic, GraphicRaycaster, MaskableGraphic, Text, UIImage, Selectable, Button, Slider, Toggle, InputField, EventSystem;
 #endif
 #ifdef BNM_UNITY_TEXTMESHPRO
         extern ClassType TMP_Text, TextMeshPro, TextMeshProUGUI, TMP_InputField;
@@ -300,12 +302,16 @@ namespace BNM::Defaults {
             return {&Internal::UIImage};
         else if constexpr (std::is_same_v<CleanT, BNM::UnityEngine::UI::MaskableGraphic>)
             return {&Internal::MaskableGraphic};
+        else if constexpr (std::is_same_v<CleanT, BNM::UnityEngine::UI::GraphicRaycaster>)
+            return {&Internal::GraphicRaycaster};
         else if constexpr (std::is_same_v<CleanT, BNM::UnityEngine::UI::Graphic>)
             return {&Internal::Graphic};
         else if constexpr (std::is_same_v<CleanT, BNM::UnityEngine::UI::CanvasScaler>)
             return {&Internal::CanvasScaler};
         else if constexpr (std::is_same_v<CleanT, BNM::UnityEngine::UI::Canvas>)
             return {&Internal::Canvas};
+        else if constexpr (std::is_same_v<CleanT, BNM::UnityEngine::UI::EventSystem>)
+            return {&Internal::EventSystem};
         else if constexpr (std::is_same_v<CleanT, BNM::UnityEngine::UI::UIBehaviour>)
             return {&Internal::UIBehaviour};
         else if constexpr (std::is_same_v<CleanT, BNM::UnityEngine::UI::RectTransform>)

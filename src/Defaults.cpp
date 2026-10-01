@@ -24,7 +24,7 @@ namespace BNM::Defaults::Internal {
     ClassType Collider2D{}, BoxCollider2D{}, CircleCollider2D{}, Rigidbody2D{}, Physics2D{};
 #endif
 #ifdef BNM_UNITY_UI
-    ClassType RectTransform{}, Canvas{}, CanvasScaler{}, UIBehaviour{}, Graphic{}, MaskableGraphic{}, Text{}, UIImage{}, Selectable{}, Button{}, Slider{}, Toggle{}, InputField{};
+    ClassType RectTransform{}, Canvas{}, CanvasScaler{}, UIBehaviour{}, Graphic{}, GraphicRaycaster{}, MaskableGraphic{}, Text{}, UIImage{}, Selectable{}, Button{}, Slider{}, Toggle{}, InputField{}, EventSystem{};
 #endif
 #ifdef BNM_UNITY_TEXTMESHPRO
     ClassType TMP_Text{}, TextMeshPro{}, TextMeshProUGUI{}, TMP_InputField{};
@@ -205,6 +205,8 @@ void BNM::Internal::LoadDefaults() {
     Slider = TryGetClassInImage(uiImage, UIStr, BNM_OBFUSCATE_TMP("Slider"));
     Toggle = TryGetClassInImage(uiImage, UIStr, BNM_OBFUSCATE_TMP("Toggle"));
     InputField = TryGetClassInImage(uiImage, UIStr, BNM_OBFUSCATE_TMP("InputField"));
+    GraphicRaycaster = TryGetClassInImage(uiImage, UIStr, BNM_OBFUSCATE_TMP("GraphicRaycaster"));
+    EventSystem = TryGetClassInImage(uiImage, EventSystemsStr, BNM_OBFUSCATE_TMP("EventSystem"));
 #endif
 
 #ifdef BNM_UNITY_TEXTMESHPRO

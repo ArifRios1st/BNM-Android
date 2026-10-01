@@ -28,7 +28,9 @@ namespace BNM::UnityEngine::UI {
     struct RectTransform;
     struct Canvas;
     struct CanvasScaler;
+    struct UIBehaviour;
     struct Graphic;
+    struct GraphicRaycaster;
     struct MaskableGraphic;
     struct Text;
     struct Image;
@@ -37,6 +39,8 @@ namespace BNM::UnityEngine::UI {
     struct Slider;
     struct Toggle;
     struct InputField;
+    struct EventSystem;
+    struct CanvasHelper;
 
     /**
         @brief Position, size, anchor and pivot information for UI elements.
@@ -1158,6 +1162,115 @@ namespace BNM::UnityEngine::UI {
             if (!IsValid()) return nullptr;
             static auto method = BNM::Defaults::Get<InputField>().ToClass().GetMethod(BNM_OBFUSCATE("get_onEndEdit"), 0).cast<UnityEvent<Structures::Mono::String *> *>();
             return method[(void *)this]();
+        }
+    };
+
+    /**
+        @brief Used for raycasting against a Canvas for touch and click interactions.
+    */
+    struct GraphicRaycaster : public UIBehaviour {
+
+        /**
+            @brief Should reversed graphics be ignored for raycasting?
+            @return True if reversed graphics are ignored.
+        */
+        inline bool GetIgnoreReversedGraphics() const {
+            if (!IsValid()) return true;
+            static auto method = BNM::Defaults::Get<GraphicRaycaster>().ToClass().GetMethod(BNM_OBFUSCATE("get_ignoreReversedGraphics"), 0).cast<bool>();
+            if (method.IsValid()) return method[(void *)this]();
+            return true;
+        }
+
+        /**
+            @brief Sets whether reversed graphics should be ignored.
+            @param value True to ignore reversed graphics.
+        */
+        inline void SetIgnoreReversedGraphics(bool value) {
+            if (!IsValid()) return;
+            static auto method = BNM::Defaults::Get<GraphicRaycaster>().ToClass().GetMethod(BNM_OBFUSCATE("set_ignoreReversedGraphics"), 1).cast<void>();
+            if (method.IsValid()) method[(void *)this](value);
+        }
+    };
+
+    /**
+        @brief Handles and routes input events (touch, click, drag) in the scene.
+    */
+    struct EventSystem : public UIBehaviour {
+
+        /**
+            @brief Gets the currently active EventSystem in the scene.
+            @return EventSystem pointer, or nullptr if none exists.
+        */
+        static inline EventSystem *GetCurrent() {
+            static auto method = BNM::Defaults::Get<EventSystem>().ToClass().GetMethod(BNM_OBFUSCATE("get_current"), 0).cast<EventSystem *>();
+            if (method.IsValid()) return method();
+            return nullptr;
+        }
+
+        /**
+            @brief Sets the current EventSystem.
+            @param eventSystem Target EventSystem.
+        */
+        static inline void SetCurrent(EventSystem *eventSystem) {
+            static auto method = BNM::Defaults::Get<EventSystem>().ToClass().GetMethod(BNM_OBFUSCATE("set_current"), 1).cast<void>();
+            if (method.IsValid()) method(eventSystem);
+        }
+
+        /**
+            @brief Ensures an active EventSystem and InputModule exist in the scene (auto-creates persistent one if needed).
+            Essential for Android touch input to work on injected UI.
+            @return Active EventSystem pointer.
+        */
+        static inline EventSystem *EnsureEventSystem() {
+            auto current = GetCurrent();
+            if (current && current->IsValid()) return current;
+
+            auto go = GameObject::Create(BNM_OBFUSCATE("BNM_EventSystem"));
+            if (!go || !go->IsValid()) return nullptr;
+            Object::DontDestroyOnLoad((Object *)go);
+
+            auto es = (EventSystem *) go->AddComponent(BNM::Defaults::Get<EventSystem>().ToClass());
+            go->AddComponent(BNM::Class(BNM_OBFUSCATE("UnityEngine.EventSystems"), BNM_OBFUSCATE("StandaloneInputModule")));
+
+            return es;
+        }
+    };
+
+    /**
+        @brief Factory helper for creating full-featured runtime overlay Canvases.
+    */
+    struct CanvasHelper {
+
+        /**
+            @brief Creates a persistent ScreenSpaceOverlay Canvas configured for touch and interaction.
+            @param name Canvas GameObject name.
+            @param sortingOrder Sorting layer order.
+            @param ensureEventSystem When true, automatically ensures an EventSystem exists.
+            @return Created Canvas pointer.
+        */
+        static inline Canvas *CreateOverlayCanvas(const std::string_view &name = "BNM_OverlayCanvas", int sortingOrder = 1000, bool ensureEventSystem = true) {
+            auto go = GameObject::Create(name);
+            if (!go || !go->IsValid()) return nullptr;
+            Object::DontDestroyOnLoad((Object *)go);
+
+            auto canvas = go->AddComponent<Canvas *>();
+            if (canvas) {
+                canvas->SetRenderMode(0); // ScreenSpaceOverlay
+                canvas->SetSortingOrder(sortingOrder);
+            }
+
+            auto scaler = go->AddComponent<CanvasScaler *>();
+            if (scaler) {
+                scaler->SetUiScaleMode(0); // ConstantPixelSize
+            }
+
+            go->AddComponent(BNM::Defaults::Get<GraphicRaycaster>().ToClass());
+
+            if (ensureEventSystem) {
+                EventSystem::EnsureEventSystem();
+            }
+
+            return canvas;
         }
     };
 }
