@@ -64,19 +64,15 @@ namespace BNM::Structures::Mono {
             @brief Get element count in dictionary.
             @return Element count.
         */
+#ifdef BNM_DOTNET35
         [[nodiscard]] inline int GetSize() const { return count; }
-
-        /**
-            @brief Alias for GetSize().
-            @return Element count.
-        */
         [[nodiscard]] inline int GetCount() const { return count; }
-
-        /**
-            @brief Check if dictionary is empty.
-            @return True if count is 0.
-        */
         [[nodiscard]] inline bool Empty() const { return count <= 0; }
+#else
+        [[nodiscard]] inline int GetSize() const { return count - freeCount >= 0 ? count - freeCount : 0; }
+        [[nodiscard]] inline int GetCount() const { return GetSize(); }
+        [[nodiscard]] inline bool Empty() const { return GetSize() <= 0; }
+#endif
 
         /**
             @brief Convert dictionary to std::map.
@@ -89,7 +85,11 @@ namespace BNM::Structures::Mono {
             for (int i = 0; i < count; i++) ret[keySlots->m_Items[i]] = valueSlots->m_Items[i];
 #else
             if (!entries) return ret;
-            for (int i = 0; i < count; i++) ret[entries->m_Items[i].key] = entries->m_Items[i].value;
+            for (int i = 0; i < count; i++) {
+                if (entries->m_Items[i].hashCode >= 0) {
+                    ret[entries->m_Items[i].key] = entries->m_Items[i].value;
+                }
+            }
 #endif
             return ret;
         }
@@ -106,8 +106,12 @@ namespace BNM::Structures::Mono {
             for (int i = 0; i < count; i++) ret.push_back({keySlots->m_Items[i], valueSlots->m_Items[i]});
 #else
             if (!entries) return ret;
-            ret.reserve(count);
-            for (int i = 0; i < count; i++) ret.push_back({entries->m_Items[i].key, entries->m_Items[i].value});
+            ret.reserve(count - freeCount >= 0 ? count - freeCount : 0);
+            for (int i = 0; i < count; i++) {
+                if (entries->m_Items[i].hashCode >= 0) {
+                    ret.push_back({entries->m_Items[i].key, entries->m_Items[i].value});
+                }
+            }
 #endif
             return ret;
         }
@@ -124,8 +128,12 @@ namespace BNM::Structures::Mono {
             for (int i = 0; i < count; i++) ret.push_back(keySlots->m_Items[i]);
 #else
             if (!entries) return ret;
-            ret.reserve(count);
-            for (int i = 0; i < count; i++) ret.push_back(entries->m_Items[i].key);
+            ret.reserve(count - freeCount >= 0 ? count - freeCount : 0);
+            for (int i = 0; i < count; i++) {
+                if (entries->m_Items[i].hashCode >= 0) {
+                    ret.push_back(entries->m_Items[i].key);
+                }
+            }
 #endif
             return ret;
         }
@@ -142,8 +150,12 @@ namespace BNM::Structures::Mono {
             for (int i = 0; i < count; i++) ret.push_back(valueSlots->m_Items[i]);
 #else
             if (!entries) return ret;
-            ret.reserve(count);
-            for (int i = 0; i < count; i++) ret.push_back(entries->m_Items[i].value);
+            ret.reserve(count - freeCount >= 0 ? count - freeCount : 0);
+            for (int i = 0; i < count; i++) {
+                if (entries->m_Items[i].hashCode >= 0) {
+                    ret.push_back(entries->m_Items[i].value);
+                }
+            }
 #endif
             return ret;
         }
