@@ -306,7 +306,11 @@ namespace BNM::UnityEngine {
         template<typename T>
         static inline T FindObjectOfType(bool includeInactive = false) {
             using CleanT = std::remove_pointer_t<T>;
-            return (T) FindObjectOfType(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                return (T) FindObjectOfType(CleanT::StaticClass(), includeInactive);
+            } else {
+                return (T) FindObjectOfType(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            }
         }
 
         /**
@@ -346,7 +350,11 @@ namespace BNM::UnityEngine {
         template<typename T>
         static inline Structures::Mono::Array<T> *FindObjectsOfType(bool includeInactive = false) {
             using CleanT = std::remove_pointer_t<T>;
-            return (Structures::Mono::Array<T> *) FindObjectsOfType(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            if constexpr (requires { CleanT::StaticClass(); }) {
+                return (Structures::Mono::Array<T> *) FindObjectsOfType(CleanT::StaticClass(), includeInactive);
+            } else {
+                return (Structures::Mono::Array<T> *) FindObjectsOfType(BNM::Defaults::Get<CleanT>().ToClass(), includeInactive);
+            }
         }
 
         /**
