@@ -32,8 +32,11 @@ namespace BNM::AssemblerUtils {
         if (!start) return 0;
         BNM_PTR curAddr = start;
         BNM_PTR target = 0;
-        while (index > 0) {
+        size_t maxInsn = 256;
+        while (index > 0 && maxInsn-- > 0) {
             uint32_t insn = *(const uint32_t *)curAddr;
+            // Stop scanning if return instruction is hit (BX LR or POP {..., PC})
+            if (insn == 0xE12FFF1E || (insn & 0x0FFF0000) == 0x08BD0000) break;
             if (DecodeBranchOrCall(insn, curAddr, target)) {
                 index--;
                 if (index == 0) return target;
@@ -64,8 +67,11 @@ namespace BNM::AssemblerUtils {
         if (!start) return 0;
         BNM_PTR curAddr = start;
         BNM_PTR target = 0;
-        while (index > 0) {
+        size_t maxInsn = 256;
+        while (index > 0 && maxInsn-- > 0) {
             uint32_t insn = *(const uint32_t *)curAddr;
+            // Stop scanning if return instruction is hit (RET)
+            if ((insn & 0xFFFFFC1F) == 0xD65F0000) break;
             if (DecodeBranchOrCall(insn, curAddr, target)) {
                 index--;
                 if (index == 0) return target;
@@ -94,8 +100,11 @@ namespace BNM::AssemblerUtils {
         if (!start) return 0;
         BNM_PTR curAddr = start;
         BNM_PTR target = 0;
-        while (index > 0) {
+        size_t maxBytes = 1024;
+        while (index > 0 && maxBytes-- > 0) {
             const uint8_t *p = (const uint8_t *)curAddr;
+            // Stop scanning if return instruction is hit (RET / RET imm16)
+            if (*p == 0xC3 || *p == 0xC2) break;
             if (DecodeBranchOrCall(p, curAddr, target)) {
                 index--;
                 if (index == 0) return target;

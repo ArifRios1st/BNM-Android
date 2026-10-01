@@ -180,7 +180,7 @@ namespace BNM::Internal {
 
             inline void AddClass(BNM_PTR image, IL2CPP::Il2CppClass *cls) {
 #ifdef BNM_ALLOW_MULTI_THREADING_SYNC
-                std::shared_lock lock(classesFindAccessMutex);
+                std::unique_lock lock(classesFindAccessMutex);
 #endif
                 (*_map)[image].emplace_back(cls);
             }

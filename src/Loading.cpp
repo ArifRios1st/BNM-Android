@@ -12,7 +12,7 @@ using namespace BNM;
 
 void Internal::Load() {
 #ifdef BNM_ALLOW_MULTI_THREADING_SYNC
-    std::shared_lock lock(loadingMutex);
+    std::unique_lock lock(loadingMutex);
 #endif
 
     // Load BNM
