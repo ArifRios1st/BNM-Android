@@ -173,6 +173,14 @@ void BNM::Free(void *ptr) {
     return Internal::il2cppMethods.il2cpp_gc_free_fixed(ptr);
 }
 
+void *BNM::NewGCHandle(void *obj, bool pinned) {
+    return Internal::il2cppMethods.il2cpp_gc_gchandle_new(obj, pinned);
+}
+
+void BNM::FreeGCHandle(void *handle) {
+    Internal::il2cppMethods.il2cpp_gc_gchandle_free(handle);
+}
+
 #ifdef __ANDROID__
 #include <elf.h>
 #include <link.h>

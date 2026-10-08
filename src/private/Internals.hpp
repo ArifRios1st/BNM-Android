@@ -73,6 +73,8 @@ namespace BNM::Internal {
         void (*il2cpp_thread_detach)(IL2CPP::Il2CppThread *){};
         void *(*il2cpp_gc_alloc_fixed)(size_t){};
         void (*il2cpp_gc_free_fixed)(void*){};
+        void *(*il2cpp_gc_gchandle_new)(void *, bool){};
+        void (*il2cpp_gc_gchandle_free)(void *){};
 
         // Direct il2cpp API methods
         std::vector<BNM::IL2CPP::Il2CppAssembly *> *(*Assembly$$GetAllAssemblies)(){};

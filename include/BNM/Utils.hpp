@@ -177,6 +177,20 @@ namespace BNM {
     */
     void Free(void *);
 
+    /**
+        @brief Creates a new GC handle for a managed object.
+        @param obj The managed object (Il2CppObject *) to create a handle for.
+        @param pinned If true, pins the object in memory (prevents GC from moving it).
+        @return GC handle (void *) that keeps the object alive until freed.
+    */
+    void *NewGCHandle(void *obj, bool pinned = false);
+
+    /**
+        @brief Frees a GC handle previously created by NewGCHandle.
+        @param handle The GC handle to free.
+    */
+    void FreeGCHandle(void *handle);
+
 #if UNITY_VER >= 232
     /**
         @brief Unmarshals unity object.
