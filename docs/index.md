@@ -76,4 +76,5 @@ Welcome to the official documentation for **BNM (ByNameModding)** — a modern, 
     - Bidirectional external icall resolution (`GetExternMethod`)
     - Tagged pointer GC handle unmarshaling (`UnmarshalUnityObject`)
     - Thread attach/detach (`AttachIl2Cpp`, `DetachIl2Cpp`) & GC memory management
+    - GC handles (`NewGCHandle`, `FreeGCHandle`) for keeping managed objects alive from native code
     - Memory hex dump & path utilities (`HexDump`, `GetDirectory`)

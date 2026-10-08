@@ -86,6 +86,34 @@ void *gcMem = BNM::Allocate(1024);
 BNM::Free(gcMem);
 ```
 
+### C. GC Handles (`NewGCHandle` / `FreeGCHandle`)
+Wraps `il2cpp_gc_gchandle_new` and `il2cpp_gc_gchandle_free`. A GC handle keeps a managed object alive while native code holds a reference to it. Without a handle, the IL2CPP garbage collector is free to collect (or move) the object at any time, leaving your raw pointer dangling.
+
+```cpp
+// Keep an object alive from native code
+BNM::IL2CPP::Il2CppObject *player = ...;
+
+void *handle = BNM::NewGCHandle(player);          // normal handle (default: pinned = false)
+void *pinned = BNM::NewGCHandle(player, true);    // pinned handle
+
+// ... object stays alive / stays in place while the handle is alive ...
+
+BNM::FreeGCHandle(handle);
+BNM::FreeGCHandle(pinned);
+```
+
+**Handle modes:**
+| Mode | Survives GC collection | Survives GC compaction (moved) | Use case |
+|------|------------------------|--------------------------------|----------|
+| `pinned = false` (default) | ✅ Yes | ❌ Object may be relocated | Long-lived native reference to a managed object |
+| `pinned = true` | ✅ Yes | ✅ Address is fixed | Native code caches a raw pointer to the object's fields/memory |
+
+**Rules of thumb:**
+- Always `FreeGCHandle` what you `NewGCHandle` — leaking handles leaks managed objects permanently.
+- Prefer `pinned = false` unless you genuinely need a stable address; pinning hurts GC performance and can fragment the managed heap.
+- The handle is an opaque `void *`. Do not dereference it — use BNM accessors on the original object pointer instead.
+- For Unity 2023.2+/6 tagged pointers, combine with `UnmarshalUnityObject` (see section 3) when you need to decode an existing handle back to an object.
+
 ---
 
 ## 5. HexDump & Directory Utilities
