@@ -2,6 +2,15 @@
 
 BNM includes a declarative C++ macro system in `BNM/GameBinding.hpp` that enables compile-time typed C++ bindings for Unity game classes, fields, properties, methods, and interfaces with zero runtime overhead and automatic lazy caching.
 
+> **Note on macro syntax:** method binding macros take the parameter list twice, as two
+> parenthesized groups — `(ParamsDecl), (ParamsCall)`:
+> ```cpp
+> BNM_BINDING_METHOD(TakeDamage, void, 2, (int damage, bool critical), (damage, critical));
+> ```
+> A zero-parameter method is `((), ())`. Overload lists (`_TYPES` / `_NAMES`) must also be
+> wrapped in parentheses so commas inside them don't split macro arguments:
+> `(std::initializer_list<std::string_view>{"text", "keyboardType"})`.
+
 ---
 
 ## 1. Declaring Game Classes (`BNM_GAME_CLASS`)
@@ -25,12 +34,12 @@ BNM_GAME_CLASS("Game.Characters", PlayerController, BNM::UnityEngine::MonoBehavi
     // 3. Properties (generates GetIsDead() and SetIsDead(bool))
     BNM_BINDING_PROPERTY(IsDead, bool);
 
-    // 4. Methods by Parameter Count
-    BNM_BINDING_METHOD(TakeDamage, void, 2, int damage, bool critical);
-    BNM_BINDING_METHOD(Respawn, void, 0);
+    // 4. Methods by Parameter Count: (ParamsDecl), (ParamsCall)
+    BNM_BINDING_METHOD(TakeDamage, void, 2, (int damage, bool critical), (damage, critical));
+    BNM_BINDING_METHOD(Respawn, void, 0, (), ());
 
     // 5. Static Methods
-    BNM_BINDING_STATIC_METHOD(GetTotalPlayerCount, int, 0);
+    BNM_BINDING_STATIC_METHOD(GetTotalPlayerCount, int, 0, (), ());
 
 BNM_GAME_CLASS_END
 ```
@@ -91,7 +100,7 @@ Declare interfaces and dynamically query whether an object implements them:
 ```cpp
 // Declare C# interface IDamageable
 BNM_GAME_INTERFACE("Game.Combat", IDamageable, "Assembly-CSharp.dll")
-    BNM_BINDING_METHOD(ApplyDamage, void, 1, float amount);
+    BNM_BINDING_METHOD(ApplyDamage, void, 1, (float amount), (amount));
 BNM_GAME_INTERFACE_END
 
 // Check and cast dynamically
