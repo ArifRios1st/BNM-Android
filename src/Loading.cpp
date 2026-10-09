@@ -215,11 +215,18 @@ void Internal::SetupBNM() {
     // il2cpp::vm::Class::Init
     il2cppMethods.Class$$Init = (decltype(il2cppMethods.Class$$Init)) AssemblerUtils::FindNextJump(AssemblerUtils::FindNextJump((BNM_PTR) GetIl2CppMethod(BNM_OBFUSCATE_TMP(BNM_IL2CPP_API_il2cpp_array_new_specific)), count), count);
     BNM_LOG_DEBUG(DBG_BNM_MSG_SetupBNM_Class_Init, OffsetInLib((void *)il2cppMethods.Class$$Init));
+    // Class$$Init is required by TryInit() across the whole public API; without it every call jumps to address 0
+    if (!il2cppMethods.Class$$Init) {
+        BNM_LOG_ERR(DBG_BNM_MSG_SetupBNM_Class_Init_Failed);
+        return;
+    }
 
 
 #define INIT_IL2CPP_API(name) il2cppMethods.name = (decltype(il2cppMethods.name)) GetIl2CppMethod(BNM_OBFUSCATE_TMP(BNM_IL2CPP_API_##name)); BNM_LOG_DEBUG("[INIT_IL2CPP_API]: " #name " (" BNM_IL2CPP_API_##name ") in lib %p", OffsetInLib((void *)il2cppMethods.name))
 
+#if UNITY_VER >= 183
     INIT_IL2CPP_API(il2cpp_image_get_class);
+#endif
     INIT_IL2CPP_API(il2cpp_get_corlib);
     INIT_IL2CPP_API(il2cpp_class_from_name);
     INIT_IL2CPP_API(il2cpp_assembly_get_image);
@@ -240,15 +247,42 @@ void Internal::SetupBNM() {
     INIT_IL2CPP_API(il2cpp_thread_current);
     INIT_IL2CPP_API(il2cpp_thread_attach);
     INIT_IL2CPP_API(il2cpp_thread_detach);
+#if UNITY_VER >= 212
     INIT_IL2CPP_API(il2cpp_gc_alloc_fixed);
     INIT_IL2CPP_API(il2cpp_gc_free_fixed);
-    INIT_IL2CPP_API(il2cpp_gc_gchandle_new);
-    INIT_IL2CPP_API(il2cpp_gc_gchandle_free);
+#endif
+    INIT_IL2CPP_API(il2cpp_gchandle_new);
+    INIT_IL2CPP_API(il2cpp_gchandle_free);
+    INIT_IL2CPP_API(il2cpp_gchandle_get_target);
+    INIT_IL2CPP_API(il2cpp_gchandle_new_weakref);
+#if UNITY_VER >= 193
+    INIT_IL2CPP_API(il2cpp_gchandle_foreach_get_target);
+#endif
+    INIT_IL2CPP_API(il2cpp_runtime_class_init);
+    INIT_IL2CPP_API(il2cpp_object_get_class);
+    INIT_IL2CPP_API(il2cpp_class_get_type);
+    INIT_IL2CPP_API(il2cpp_class_get_name);
+    INIT_IL2CPP_API(il2cpp_class_get_namespace);
+    INIT_IL2CPP_API(il2cpp_class_get_image);
+    INIT_IL2CPP_API(il2cpp_class_get_parent);
+    INIT_IL2CPP_API(il2cpp_class_is_valuetype);
+    INIT_IL2CPP_API(il2cpp_class_is_enum);
+    INIT_IL2CPP_API(il2cpp_class_get_method_from_name);
+    INIT_IL2CPP_API(il2cpp_class_get_field_from_name);
+#if UNITY_VER >= 191
+    INIT_IL2CPP_API(il2cpp_class_get_userdata_offset);
+    INIT_IL2CPP_API(il2cpp_class_set_userdata);
+#endif
+    INIT_IL2CPP_API(il2cpp_string_new_len);
+    INIT_IL2CPP_API(il2cpp_string_new_utf16);
 
 #undef INIT_IL2CPP_API
 
     //! il2cpp::vm::Image::GetTypes
-    if (il2cppMethods.il2cpp_image_get_class == nullptr) {
+#if UNITY_VER >= 183
+    if (il2cppMethods.il2cpp_image_get_class == nullptr)
+#endif
+    {
         auto assemblyClass = il2cppMethods.il2cpp_class_from_name(il2cppMethods.il2cpp_get_corlib(), BNM_OBFUSCATE_TMP("System.Reflection"), BNM_OBFUSCATE_TMP("Assembly"));
         BNM_PTR GetTypesAdr = Class(assemblyClass).GetMethod(BNM_OBFUSCATE_TMP("GetTypes"), 1).GetOffset();
 
@@ -267,7 +301,10 @@ void Internal::SetupBNM() {
         il2cppMethods.orig_Image$$GetTypes = (decltype(il2cppMethods.orig_Image$$GetTypes)) AssemblerUtils::FindNextJump(AssemblerUtils::FindNextJump(AssemblerUtils::FindNextJump(GetTypesAdr, count), sCount), count);
 
         BNM_LOG_DEBUG(DBG_BNM_MSG_SetupBNM_Image_GetTypes, OffsetInLib((void *)il2cppMethods.orig_Image$$GetTypes));
-    } else BNM_LOG_DEBUG(DBG_BNM_MSG_SetupBNM_image_get_class_exists);
+    }
+#if UNITY_VER >= 183
+    else BNM_LOG_DEBUG(DBG_BNM_MSG_SetupBNM_image_get_class_exists);
+#endif
 
 #ifdef BNM_CLASSES_MANAGEMENT
 
@@ -348,11 +385,14 @@ void Internal::SetupBNM() {
     auto stringClass = Class(BNM_OBFUSCATE_TMP("System"), BNM_OBFUSCATE_TMP("String"), mscorlib);
     auto interlockedClass = Class(BNM_OBFUSCATE_TMP("System.Threading"), BNM_OBFUSCATE_TMP("Interlocked"), mscorlib);
     auto objectClass = Class(BNM_OBFUSCATE_TMP("System"), BNM_OBFUSCATE_TMP("Object"), mscorlib);
-    for (uint16_t slot = 0; slot < objectClass._data->vtable_count; slot++) {
-        const BNM::IL2CPP::MethodInfo* vMethod = objectClass._data->vtable[slot].method;
-        if (strcmp(vMethod->name, BNM_OBFUSCATE_TMP("Finalize")) != 0) continue;
-        finalizerSlot = slot;
-        break;
+    if (objectClass._data) {
+        for (uint16_t slot = 0; slot < objectClass._data->vtable_count; slot++) {
+            const BNM::IL2CPP::MethodInfo* vMethod = objectClass._data->vtable[slot].method;
+            if (!vMethod || !vMethod->name) continue;
+            if (strcmp(vMethod->name, BNM_OBFUSCATE_TMP("Finalize")) != 0) continue;
+            finalizerSlot = slot;
+            break;
+        }
     }
 
     auto UnityEngineCoreModule = Image(BNM_OBFUSCATE_TMP("UnityEngine.CoreModule.dll"));

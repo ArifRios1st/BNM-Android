@@ -3,6 +3,7 @@
 
 using namespace BNM;
 
+#if UNITY_VER >= 192
 int Internal::BNM_il2cpp_init(const char *domain_name) {
     if (states.lateInitAllowed) Unhook(BNM_Class$$FromIl2CppType_origin);
 
@@ -14,6 +15,18 @@ int Internal::BNM_il2cpp_init(const char *domain_name) {
 
     return ret;
 }
+#else
+// il2cpp_init returned void before Unity 2019.2
+void Internal::BNM_il2cpp_init(const char *domain_name) {
+    if (states.lateInitAllowed) Unhook(BNM_Class$$FromIl2CppType_origin);
+
+    old_BNM_il2cpp_init(domain_name);
+
+    Unhook(BNM_il2cpp_init_origin);
+
+    Load();
+}
+#endif
 
 IL2CPP::Il2CppClass *Internal::BNM_Class$$FromIl2CppType(IL2CPP::Il2CppReflectionType *type) {
     auto klass = old_BNM_Class$$FromIl2CppType(type);

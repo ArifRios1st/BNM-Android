@@ -103,7 +103,9 @@ std::vector<Class> Class::GetInnerClasses(bool includeParent) const {
     auto curClass = _data;
 
     do {
-        for (uint16_t i = 0; i < curClass->nested_type_count; ++i) ret.emplace_back(curClass->nestedTypes[i]);
+        auto nestedTypes = (IL2CPP::Il2CppClass *const *) curClass->nestedTypes; // const void* since 6000.5, typed pointer before
+        auto count = Internal::SafeCount(curClass->nested_type_count, nestedTypes);
+        for (uint16_t i = 0; i < count; ++i) ret.emplace_back(nestedTypes[i]);
         if (includeParent) curClass = curClass->parent;
         else break;
     } while (curClass);
@@ -119,8 +121,10 @@ std::vector<FieldBase> Class::GetFields(bool includeParent) const {
     auto curClass = _data;
 
     do {
-        auto end = curClass->fields + curClass->field_count;
-        for (IL2CPP::FieldInfo *currentField = curClass->fields; currentField != end; ++currentField) ret.emplace_back(currentField);
+        auto fields = curClass->fields;
+        auto count = Internal::SafeCount(curClass->field_count, fields);
+        auto end = fields + count;
+        for (IL2CPP::FieldInfo *currentField = fields; currentField != end; ++currentField) ret.emplace_back(currentField);
         if (includeParent) curClass = curClass->parent;
         else break;
     } while (curClass);
@@ -136,7 +140,8 @@ std::vector<MethodBase> Class::GetMethods(bool includeParent) const {
     auto curClass = _data;
 
     do {
-        for (uint16_t i = 0; i < curClass->method_count; ++i) ret.emplace_back(curClass->methods[i]);
+        auto count = Internal::SafeCount(curClass->method_count, curClass->methods);
+        for (uint16_t i = 0; i < count; ++i) ret.emplace_back(curClass->methods[i]);
         if (includeParent) curClass = curClass->parent;
         else break;
     } while (curClass);
@@ -152,8 +157,10 @@ std::vector<PropertyBase> Class::GetProperties(bool includeParent) const {
     auto curClass = _data;
 
     do {
-        auto end = curClass->properties + curClass->property_count;
-        for (auto currentProperty = curClass->properties; currentProperty != end; ++currentProperty) ret.emplace_back(currentProperty);
+        auto properties = (const IL2CPP::PropertyInfo *) curClass->properties; // const void* since 6000.5, typed pointer before
+        auto count = Internal::SafeCount(curClass->property_count, properties);
+        auto end = properties + count;
+        for (auto currentProperty = properties; currentProperty != end; ++currentProperty) ret.emplace_back(currentProperty);
         if (includeParent) curClass = curClass->parent;
         else break;
     } while (curClass);
@@ -169,8 +176,10 @@ std::vector<EventBase> Class::GetEvents(bool includeParent) const {
     auto curClass = _data;
 
     do {
-        auto end = curClass->events + curClass->event_count;
-        for (auto currentEvent = curClass->events; currentEvent != end; ++currentEvent) ret.emplace_back(currentEvent);
+        auto events = (const IL2CPP::EventInfo *) curClass->events; // const void* since 6000.5, typed pointer before
+        auto count = Internal::SafeCount(curClass->event_count, events);
+        auto end = events + count;
+        for (auto currentEvent = events; currentEvent != end; ++currentEvent) ret.emplace_back(currentEvent);
         if (includeParent) curClass = curClass->parent;
         else break;
     } while (curClass);
@@ -245,8 +254,10 @@ PropertyBase Class::GetProperty(const std::string_view &name) const {
     auto curClass = _data;
 
     do {
-        auto end = curClass->properties + curClass->property_count;
-        for (auto currentProperty = curClass->properties; currentProperty != end; ++currentProperty) if (name == currentProperty->name) return currentProperty;
+        auto properties = (const IL2CPP::PropertyInfo *) curClass->properties; // const void* since 6000.5
+        auto count = Internal::SafeCount(curClass->property_count, properties);
+        auto end = properties + count;
+        for (auto currentProperty = properties; currentProperty != end; ++currentProperty) if (name == currentProperty->name) return currentProperty;
         curClass = curClass->parent;
     } while (curClass);
 
@@ -263,8 +274,10 @@ PropertyBase Class::GetProperty(const std::string_view& name, const CompileTimeC
     auto typeClass = type.ToIl2CppClass();
 
     do {
-        auto end = curClass->properties + curClass->property_count;
-        for (auto currentProperty = curClass->properties; currentProperty != end; ++currentProperty)
+        auto properties = (const IL2CPP::PropertyInfo *) curClass->properties; // const void* since 6000.5
+        auto count = Internal::SafeCount(curClass->property_count, properties);
+        auto end = properties + count;
+        for (auto currentProperty = properties; currentProperty != end; ++currentProperty)
             if (name == currentProperty->name && PropertyBase{currentProperty}.GetType() == typeClass) return currentProperty;
         curClass = curClass->parent;
     } while (curClass);
@@ -280,8 +293,10 @@ Class Class::GetInnerClass(const std::string_view &name) const {
     auto curClass = _data;
 
     do {
-        for (uint16_t i = 0; i < curClass->nested_type_count; ++i) {
-            auto cls = curClass->nestedTypes[i];
+        auto nestedTypes = (IL2CPP::Il2CppClass *const *) curClass->nestedTypes; // const void* since 6000.5
+        auto count = Internal::SafeCount(curClass->nested_type_count, nestedTypes);
+        for (uint16_t i = 0; i < count; ++i) {
+            auto cls = nestedTypes[i];
             if (name == cls->name) return cls;
         }
         curClass = curClass->parent;
@@ -298,8 +313,10 @@ FieldBase Class::GetField(const std::string_view &name) const {
     auto curClass = _data;
 
     do {
-        auto end = curClass->fields + curClass->field_count;
-        for (auto currentField = curClass->fields; currentField != end; ++currentField) {
+        auto fields = curClass->fields;
+        auto count = Internal::SafeCount(curClass->field_count, fields);
+        auto end = fields + count;
+        for (auto currentField = fields; currentField != end; ++currentField) {
             if (name != currentField->name) continue;
             return currentField;
         }
@@ -317,8 +334,10 @@ EventBase Class::GetEvent(const std::string_view &name) const {
     auto curClass = _data;
 
     do {
-        auto end = curClass->events + curClass->event_count;
-        for (auto currentEvent = curClass->events; currentEvent != end; ++currentEvent) {
+        auto events = (const IL2CPP::EventInfo *) curClass->events; // const void* since 6000.5
+        auto count = Internal::SafeCount(curClass->event_count, events);
+        auto end = events + count;
+        for (auto currentEvent = events; currentEvent != end; ++currentEvent) {
             if (name != currentEvent->name) continue;
             return currentEvent;
         }
@@ -379,6 +398,7 @@ MonoType *Class::GetMonoType() const {
     BNM_LOG_ERR_IF(!_data, DBG_BNM_MSG_Class_Dead_Error);
     if (!_data) return {};
     TryInit();
+    if (!Internal::il2cppMethods.il2cpp_type_get_object) return {};
     return (MonoType *) Internal::il2cppMethods.il2cpp_type_get_object(GetIl2CppType());
 }
 
@@ -407,19 +427,22 @@ IL2CPP::Il2CppObject *Class::CreateNewInstance() const {
     if ((_data->flags & (0x00000080 | 0x00000020))) // TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_INTERFACE
         BNM_LOG_WARN(DBG_BNM_MSG_Class_CreateNewInstance_Abstract_Warn, str().c_str());
 
+    if (!Internal::il2cppMethods.il2cpp_object_new) return nullptr;
     auto obj = Internal::il2cppMethods.il2cpp_object_new(_data);
     if (obj) memset((char*)obj + sizeof(IL2CPP::Il2CppObject), 0, _data->instance_size - sizeof(IL2CPP::Il2CppObject));
     return obj;
 }
 
 // Try initializing the class if it is alive
-void Class::TryInit() const { if (_data) Internal::il2cppMethods.Class$$Init(_data); }
+void Class::TryInit() const { if (_data && Internal::il2cppMethods.Class$$Init) Internal::il2cppMethods.Class$$Init(_data); }
 
 IL2CPP::Il2CppObject *Class::BoxObject(IL2CPP::Il2CppClass *_data, void *data) {
+    if (!Internal::il2cppMethods.il2cpp_value_box) return nullptr;
     return Internal::il2cppMethods.il2cpp_value_box(_data, data);
 }
 
 IL2CPP::Il2CppArray *Class::ArrayNew(IL2CPP::Il2CppClass *cls, IL2CPP::il2cpp_array_size_t length) {
+    if (!Internal::il2cppMethods.il2cpp_array_new) return nullptr;
     return Internal::il2cppMethods.il2cpp_array_new(cls, length);
 }
 

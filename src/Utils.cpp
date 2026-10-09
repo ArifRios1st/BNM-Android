@@ -3,10 +3,17 @@
 #include <BNM/Method.hpp>
 #include <Internals.hpp>
 
+#include <string>
+
 using namespace BNM;
 
 Structures::Mono::String *BNM::CreateMonoString(const std::string_view &str) {
-    return Internal::il2cppMethods.il2cpp_string_new(str.data());
+    // il2cpp_string_new reads a null-terminated C string, but std::string_view is not guaranteed
+    // to be null-terminated. Use il2cpp_string_new_len with an explicit length to avoid over-reads.
+    if (Internal::il2cppMethods.il2cpp_string_new_len) return Internal::il2cppMethods.il2cpp_string_new_len(str.data(), (uint32_t) str.size());
+    // Fallback for runtimes where string_new_len was not resolved: copy to a null-terminated buffer
+    std::string tmp{str};
+    return Internal::il2cppMethods.il2cpp_string_new(tmp.c_str());
 }
 
 void *BNM::GetExternMethod(const std::string_view &str) {
@@ -55,6 +62,7 @@ bool BNM::VirtualHookImpl(Class targetClass, IL2CPP::MethodInfo *info, void *new
     NEXT:
     for (; i < targetClass._data->vtable_count; ++i) {
         auto &vTable = targetClass._data->vtable[i];
+        if (!vTable.method) continue; // vtable slot may be empty (stripped / not yet initialized)
         auto count = vTable.method->parameters_count;
 
         if (strcmp(vTable.method->name, info->name) != 0 || count != info->parameters_count) continue;
@@ -150,35 +158,149 @@ void Utils::LogCompileTimeClass(const CompileTimeClass &compileTimeClass) {
 #endif
 
 bool BNM::AttachIl2Cpp() {
+    if (!Internal::il2cppMethods.il2cpp_domain_get || !Internal::il2cppMethods.il2cpp_thread_attach) return false;
     if (CurrentIl2CppThread()) return false;
-    Internal::il2cppMethods.il2cpp_thread_attach(Internal::il2cppMethods.il2cpp_domain_get());
+    auto domain = Internal::il2cppMethods.il2cpp_domain_get();
+    if (!domain) return false;
+    Internal::il2cppMethods.il2cpp_thread_attach(domain);
     return true;
 }
 
 IL2CPP::Il2CppThread *BNM::CurrentIl2CppThread() {
-    return Internal::il2cppMethods.il2cpp_thread_current(Internal::il2cppMethods.il2cpp_domain_get());
+    if (!Internal::il2cppMethods.il2cpp_domain_get || !Internal::il2cppMethods.il2cpp_thread_current) return nullptr;
+    auto domain = Internal::il2cppMethods.il2cpp_domain_get();
+    if (!domain) return nullptr;
+    return Internal::il2cppMethods.il2cpp_thread_current(domain);
 }
 
 void BNM::DetachIl2Cpp() {
+    if (!Internal::il2cppMethods.il2cpp_thread_detach) return;
     auto thread = BNM::CurrentIl2CppThread();
     if (!thread) return;
     Internal::il2cppMethods.il2cpp_thread_detach(thread);
 }
 
 void *BNM::Allocate(size_t size) {
-    return Internal::il2cppMethods.il2cpp_gc_alloc_fixed(size);
+#if UNITY_VER >= 212
+    if (Internal::il2cppMethods.il2cpp_gc_alloc_fixed) return Internal::il2cppMethods.il2cpp_gc_alloc_fixed(size);
+#endif
+    // il2cpp_gc_alloc_fixed is only available since Unity 2021.2
+    return BNM_malloc(size);
 }
 
 void BNM::Free(void *ptr) {
-    return Internal::il2cppMethods.il2cpp_gc_free_fixed(ptr);
+    if (!ptr) return;
+#if UNITY_VER >= 212
+    if (Internal::il2cppMethods.il2cpp_gc_free_fixed) return Internal::il2cppMethods.il2cpp_gc_free_fixed(ptr);
+#endif
+    // il2cpp_gc_free_fixed is only available since Unity 2021.2
+    BNM_free(ptr);
 }
 
 void *BNM::NewGCHandle(void *obj, bool pinned) {
-    return Internal::il2cppMethods.il2cpp_gc_gchandle_new(obj, pinned);
+    if (!obj || !Internal::il2cppMethods.il2cpp_gchandle_new) return nullptr;
+    return (void *) Internal::il2cppMethods.il2cpp_gchandle_new((IL2CPP::Il2CppObject *) obj, pinned);
 }
 
 void BNM::FreeGCHandle(void *handle) {
-    Internal::il2cppMethods.il2cpp_gc_gchandle_free(handle);
+    if (!handle || !Internal::il2cppMethods.il2cpp_gchandle_free) return;
+    Internal::il2cppMethods.il2cpp_gchandle_free((IL2CPP::Il2CppGCHandle) handle);
+}
+
+void *BNM::GetGCHandleTarget(void *handle) {
+    if (!handle || !Internal::il2cppMethods.il2cpp_gchandle_get_target) return nullptr;
+    return (void *) Internal::il2cppMethods.il2cpp_gchandle_get_target((IL2CPP::Il2CppGCHandle) handle);
+}
+
+void *BNM::NewWeakGCHandle(void *obj, bool trackResurrection) {
+    if (!obj || !Internal::il2cppMethods.il2cpp_gchandle_new_weakref) return nullptr;
+    return (void *) Internal::il2cppMethods.il2cpp_gchandle_new_weakref((IL2CPP::Il2CppObject *) obj, trackResurrection);
+}
+
+void BNM::RuntimeClassInit(IL2CPP::Il2CppClass *klass) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_runtime_class_init) return;
+    Internal::il2cppMethods.il2cpp_runtime_class_init(klass);
+}
+
+IL2CPP::Il2CppClass *BNM::GetObjectClass(IL2CPP::Il2CppObject *obj) {
+    if (!obj || !Internal::il2cppMethods.il2cpp_object_get_class) return nullptr;
+    return Internal::il2cppMethods.il2cpp_object_get_class(obj);
+}
+
+const IL2CPP::Il2CppType *BNM::GetClassType(IL2CPP::Il2CppClass *klass) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_get_type) return nullptr;
+    return Internal::il2cppMethods.il2cpp_class_get_type(klass);
+}
+
+const char *BNM::GetClassName(IL2CPP::Il2CppClass *klass) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_get_name) return nullptr;
+    return Internal::il2cppMethods.il2cpp_class_get_name(klass);
+}
+
+const char *BNM::GetClassNamespace(IL2CPP::Il2CppClass *klass) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_get_namespace) return nullptr;
+    return Internal::il2cppMethods.il2cpp_class_get_namespace(klass);
+}
+
+const IL2CPP::Il2CppImage *BNM::GetClassImage(IL2CPP::Il2CppClass *klass) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_get_image) return nullptr;
+    return Internal::il2cppMethods.il2cpp_class_get_image(klass);
+}
+
+IL2CPP::Il2CppClass *BNM::GetClassParent(IL2CPP::Il2CppClass *klass) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_get_parent) return nullptr;
+    return Internal::il2cppMethods.il2cpp_class_get_parent(klass);
+}
+
+bool BNM::IsClassValueType(IL2CPP::Il2CppClass *klass) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_is_valuetype) return false;
+    return Internal::il2cppMethods.il2cpp_class_is_valuetype(klass);
+}
+
+bool BNM::IsClassEnum(IL2CPP::Il2CppClass *klass) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_is_enum) return false;
+    return Internal::il2cppMethods.il2cpp_class_is_enum(klass);
+}
+
+const IL2CPP::MethodInfo *BNM::GetMethodFromName(IL2CPP::Il2CppClass *klass, const std::string_view &name, int argsCount) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_get_method_from_name) return nullptr;
+    // std::string_view is not guaranteed to be null-terminated; the il2cpp C API expects a C string
+    std::string tmp{name};
+    return Internal::il2cppMethods.il2cpp_class_get_method_from_name(klass, tmp.c_str(), argsCount);
+}
+
+IL2CPP::FieldInfo *BNM::GetFieldFromName(IL2CPP::Il2CppClass *klass, const std::string_view &name) {
+    if (!klass || !Internal::il2cppMethods.il2cpp_class_get_field_from_name) return nullptr;
+    // std::string_view is not guaranteed to be null-terminated; the il2cpp C API expects a C string
+    std::string tmp{name};
+    return Internal::il2cppMethods.il2cpp_class_get_field_from_name(klass, tmp.c_str());
+}
+
+int BNM::GetClassUserDataOffset() {
+#if UNITY_VER >= 191
+    if (Internal::il2cppMethods.il2cpp_class_get_userdata_offset) return Internal::il2cppMethods.il2cpp_class_get_userdata_offset();
+#endif
+    // il2cpp_class_get_userdata_offset is only available since Unity 2019.1/2019.2
+    return -1;
+}
+
+void BNM::SetClassUserData(IL2CPP::Il2CppClass *klass, void *userData) {
+#if UNITY_VER >= 191
+    if (klass && Internal::il2cppMethods.il2cpp_class_set_userdata) Internal::il2cppMethods.il2cpp_class_set_userdata(klass, userData);
+#else
+    // il2cpp_class_set_userdata is only available since Unity 2019.1/2019.2
+    (void) klass; (void) userData;
+#endif
+}
+
+BNM::Structures::Mono::String *BNM::CreateMonoStringLen(const std::string_view &str) {
+    if (!Internal::il2cppMethods.il2cpp_string_new_len) return nullptr;
+    return Internal::il2cppMethods.il2cpp_string_new_len(str.data(), (uint32_t) str.size());
+}
+
+void *BNM::RuntimeInvoke(IL2CPP::MethodInfo *method, void *obj, void **params, IL2CPP::Il2CppException **exc) {
+    if (!method || !Internal::il2cppMethods.il2cpp_runtime_invoke) return nullptr;
+    return Internal::il2cppMethods.il2cpp_runtime_invoke(method, obj, params, exc);
 }
 
 #ifdef __ANDROID__

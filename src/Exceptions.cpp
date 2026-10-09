@@ -5,7 +5,7 @@ BNM::Exception BNM::TryInvoke(const std::function<void()> &func) {
     BNM::IL2CPP::Il2CppType type;
     type.type = BNM::IL2CPP::IL2CPP_TYPE_VOID;
     BNM::IL2CPP::Il2CppClass klass;
-#if UNITY_VER <= 204
+#if UNITY_VER < 211
     klass.valuetype = 0;
 #endif
     BNM::IL2CPP::MethodInfo info;
