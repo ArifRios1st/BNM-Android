@@ -22,8 +22,22 @@ namespace BNM::Internal {
     std::map<uint32_t, BNM::Class> customListsMap{};
     int32_t finalizerSlot = -1;
 
+#ifdef BNM_ALLOW_MULTI_THREADING_SYNC
+    std::shared_mutex customListsMapMutex{};
+#endif
+
+#ifdef BNM_CLASSES_MANAGEMENT
+    std::unordered_set<BNM::IL2CPP::Il2CppClass *> bnmAllocatedClasses{};
+    std::unordered_set<BNM::IL2CPP::Il2CppClass **> bnmAllocatedInnerLists{};
+#endif
+
     void *BNM_il2cpp_init_origin{};
+#if UNITY_VER >= 192
     int (*old_BNM_il2cpp_init)(const char *){};
+#else
+    // il2cpp_init returned void before Unity 2019.2
+    void (*old_BNM_il2cpp_init)(const char *){};
+#endif
 
     void *BNM_Class$$FromIl2CppType_origin{};
     IL2CPP::Il2CppClass *(*old_BNM_Class$$FromIl2CppType)(IL2CPP::Il2CppReflectionType*){};
@@ -84,6 +98,9 @@ std::vector<BNM::IL2CPP::Il2CppAssembly *> &Internal::GetAllAssemblies() {
         }
     }
 
+#ifdef BNM_ALLOW_MULTI_THREADING_SYNC
+    std::shared_lock lock(fallbackAssembliesMutex);
+#endif
     return fallbackAssembliesList;
 }
 
@@ -116,15 +133,19 @@ IL2CPP::Il2CppClass *Internal::TryGetClassInImage(const IL2CPP::Il2CppImage *ima
     if (image->nameToClassHashTable == (decltype(image->nameToClassHashTable))-0x424e4d) goto NEW_CLASSES;
 #endif
 
+#if UNITY_VER >= 183
     if (Internal::il2cppMethods.il2cpp_image_get_class) {
         size_t typeCount = image->typeCount;
 
         for (size_t i = 0; i < typeCount; ++i) {
             auto cls = il2cppMethods.il2cpp_image_get_class(image, i);
+            if (!cls) continue; // il2cpp_image_get_class may return null for stripped types
             if (cls->declaringType || !cls->flags && strcmp(cls->name, BNM_OBFUSCATE("<Module>")) == 0) continue;
             if (_namespace == cls->namespaze && _name == cls->name) return cls;
         }
-    } else {
+    } else
+#endif
+    {
         std::vector<IL2CPP::Il2CppClass *> classes{};
         Internal::Image$$GetTypes(image, false, &classes);
 
