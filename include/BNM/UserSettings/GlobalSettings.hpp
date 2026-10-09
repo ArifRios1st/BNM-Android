@@ -44,7 +44,9 @@ static_assert(false, "ByNameModding requires C++20 and above!");
 #define UNITY_VER 222 // 2022.2.x - 2022.3.x
 //#define UNITY_VER 231 // 2023.1.x
 //#define UNITY_VER 232 // 2023.2.x - 2023.3.x
-//#define UNITY_VER 600 // Unity 6 (6000.0.x - 6000.x LTS)
+//#define UNITY_VER 600 // Unity 6000.0.x - 6000.4.x
+//#define UNITY_VER 605 // Unity 6000.5.x
+//#define UNITY_VER 606 // Unity 6000.6.x+
 #endif
 
 #ifndef UNITY_PATCH_VER

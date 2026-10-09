@@ -38,9 +38,13 @@ BNM automatically adapts IL2CPP metadata offsets, struct layouts, and method inv
 | `#define UNITY_VER 222` | Unity 2022.2.x – 2022.3.x *(Default)* |
 | `#define UNITY_VER 231` | Unity 2023.1.x |
 | `#define UNITY_VER 232` | Unity 2023.2.x – 2023.3.x |
-| `#define UNITY_VER 600` | Unity 6 (6000.0.x – 6000.x LTS) |
+| `#define UNITY_VER 600` | Unity 6000.0.x – 6000.4.x |
+| `#define UNITY_VER 605` | Unity 6000.5.x |
+| `#define UNITY_VER 606` | Unity 6000.6.x+ |
 
 > **Special Patches**: Set `#define UNITY_PATCH_VER 24` if using Unity 2021.1 with patch version >= 24.
+
+> **Unity 6 layout notes**: Unity 6000.3.5 replaced `Il2CppClass.rgctx_data` with the `Il2CppClass_InitDataUnion init_data` union (same offset; BNM handles this automatically). Unity 6000.5 moved `events`/`properties`/`nestedTypes` behind `const void*` and Unity 6000.6 merged `implementedInterfaces`/`interfaceOffsets` into `Il2CppRuntimeInterfaceData* interfaces` — which is why separate `UNITY_VER` values are required per Unity 6 layout.
 
 ---
 
@@ -147,3 +151,36 @@ You can secure sensitive class/method names in your mod binary:
 // Obfuscation macro for temporary initialization strings
 #define BNM_OBFUSCATE_TMP(str) OBFUSCATE_TMP(str)
 ```
+
+---
+
+## 9. Public IL2CPP API Wrappers
+
+BNM resolves a curated set of exported IL2CPP API functions (`il2cpp_*`) at load time and exposes them through safe public wrappers in `include/BNM/Utils.hpp`. All wrappers are null-safe: they return a default value (`nullptr` / `false` / `-1`) if BNM is not loaded yet or the target Unity version does not export the symbol.
+
+| BNM Wrapper | Unity IL2CPP API | Availability |
+| :--- | :--- | :--- |
+| `BNM::Allocate` / `BNM::Free` | `il2cpp_gc_alloc_fixed` / `il2cpp_gc_free_fixed` | All versions (falls back to `BNM_malloc`/`BNM_free` on Unity < 2021.2) |
+| `BNM::NewGCHandle` | `il2cpp_gchandle_new` | All versions |
+| `BNM::FreeGCHandle` | `il2cpp_gchandle_free` | All versions |
+| `BNM::GetGCHandleTarget` | `il2cpp_gchandle_get_target` | All versions |
+| `BNM::NewWeakGCHandle` | `il2cpp_gchandle_new_weakref` | All versions |
+| `BNM::RuntimeClassInit` | `il2cpp_runtime_class_init` | All versions |
+| `BNM::RuntimeInvoke` | `il2cpp_runtime_invoke` | All versions |
+| `BNM::GetObjectClass` | `il2cpp_object_get_class` | All versions |
+| `BNM::GetClassType` | `il2cpp_class_get_type` | All versions |
+| `BNM::GetClassName` | `il2cpp_class_get_name` | All versions |
+| `BNM::GetClassNamespace` | `il2cpp_class_get_namespace` | All versions |
+| `BNM::GetClassImage` | `il2cpp_class_get_image` | All versions |
+| `BNM::GetClassParent` | `il2cpp_class_get_parent` | All versions |
+| `BNM::IsClassValueType` | `il2cpp_class_is_valuetype` | All versions |
+| `BNM::IsClassEnum` | `il2cpp_class_is_enum` | All versions |
+| `BNM::GetMethodFromName` | `il2cpp_class_get_method_from_name` | All versions |
+| `BNM::GetFieldFromName` | `il2cpp_class_get_field_from_name` | All versions |
+| `BNM::GetClassUserDataOffset` | `il2cpp_class_get_userdata_offset` | Unity 2019.1+ (returns `-1` below) |
+| `BNM::SetClassUserData` | `il2cpp_class_set_userdata` | Unity 2019.1+ (no-op below) |
+| `BNM::CreateMonoStringLen` | `il2cpp_string_new_len` | All versions |
+
+> **Internal note**: BNM previously resolved non-existent symbols `il2cpp_gc_gchandle_new`/`il2cpp_gc_gchandle_free`; these were renamed to the canonical Unity exports `il2cpp_gchandle_new`/`il2cpp_gchandle_free`. GC handles are passed as `Il2CppGCHandle` (`void*`), which is ABI-compatible with the `uint32_t` handles used by Unity ≤ 2022.3.
+
+> **Version-gated internals**: `il2cpp_image_get_class` is only resolved on Unity ≥ 2018.4 and `il2cpp_gc_alloc_fixed`/`il2cpp_gc_free_fixed` only on Unity ≥ 2021.2; older versions automatically use BNM's manual fallbacks (image walking via `Image::GetTypes`, and `BNM_malloc` respectively).
