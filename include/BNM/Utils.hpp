@@ -191,6 +191,118 @@ namespace BNM {
     */
     void FreeGCHandle(void *handle);
 
+    /**
+        @brief Gets the managed object a GC handle points to (il2cpp_gchandle_get_target).
+        @param handle The GC handle created by NewGCHandle / NewWeakGCHandle.
+        @return The managed object (Il2CppObject *) or null if the handle is invalid.
+    */
+    void *GetGCHandleTarget(void *handle);
+
+    /**
+        @brief Creates a new weak-reference GC handle for a managed object (il2cpp_gchandle_new_weakref).
+        @param obj The managed object (Il2CppObject *) to create a weak handle for.
+        @param trackResurrection If true, the handle tracks resurrection.
+        @return Weak GC handle (void *) that does not keep the object alive.
+    */
+    void *NewWeakGCHandle(void *obj, bool trackResurrection = false);
+
+    /**
+        @brief Runs the static constructor (.cctor) of a class if it has not run yet (il2cpp_runtime_class_init).
+        @param klass The IL2CPP class to initialize.
+    */
+    void RuntimeClassInit(IL2CPP::Il2CppClass *klass);
+
+    /**
+        @brief Invokes a managed method directly via il2cpp_runtime_invoke.
+        @param method The MethodInfo to invoke.
+        @param obj The instance (null for static methods).
+        @param params Array of parameter pointers (can be null if no parameters).
+        @param exc Receives the exception object on managed exception (can be null).
+        @return The boxed return value or null.
+    */
+    void *RuntimeInvoke(IL2CPP::MethodInfo *method, void *obj, void **params, IL2CPP::Il2CppException **exc = nullptr);
+
+    /**
+        @brief Gets the IL2CPP class of a managed object (il2cpp_object_get_class).
+        @return Il2CppClass of the object or null.
+    */
+    IL2CPP::Il2CppClass *GetObjectClass(IL2CPP::Il2CppObject *obj);
+
+    /**
+        @brief Gets the Il2CppType of a class (il2cpp_class_get_type).
+        @return Il2CppType of the class or null.
+    */
+    const IL2CPP::Il2CppType *GetClassType(IL2CPP::Il2CppClass *klass);
+
+    /**
+        @brief Gets the name of a class (il2cpp_class_get_name).
+        @return Class name (e.g. "String") or null.
+    */
+    const char *GetClassName(IL2CPP::Il2CppClass *klass);
+
+    /**
+        @brief Gets the namespace of a class (il2cpp_class_get_namespace).
+        @return Class namespace (e.g. "System") or null.
+    */
+    const char *GetClassNamespace(IL2CPP::Il2CppClass *klass);
+
+    /**
+        @brief Gets the image (assembly metadata) a class belongs to (il2cpp_class_get_image).
+        @return Il2CppImage of the class or null.
+    */
+    const IL2CPP::Il2CppImage *GetClassImage(IL2CPP::Il2CppClass *klass);
+
+    /**
+        @brief Gets the parent (base) class of a class (il2cpp_class_get_parent).
+        @return Parent Il2CppClass or null.
+    */
+    IL2CPP::Il2CppClass *GetClassParent(IL2CPP::Il2CppClass *klass);
+
+    /**
+        @brief Checks whether a class is a value type (il2cpp_class_is_valuetype).
+    */
+    bool IsClassValueType(IL2CPP::Il2CppClass *klass);
+
+    /**
+        @brief Checks whether a class is an enum (il2cpp_class_is_enum).
+    */
+    bool IsClassEnum(IL2CPP::Il2CppClass *klass);
+
+    /**
+        @brief Finds a method by name in a class, optionally filtered by argument count (il2cpp_class_get_method_from_name).
+        @param klass The class to search.
+        @param name Method name (must be null-terminated; use a string literal).
+        @param argsCount Required argument count, or -1 to match any overload.
+        @return MethodInfo or null if not found.
+    */
+    const IL2CPP::MethodInfo *GetMethodFromName(IL2CPP::Il2CppClass *klass, const std::string_view &name, int argsCount = -1);
+
+    /**
+        @brief Finds a field by name in a class (il2cpp_class_get_field_from_name).
+        @param klass The class to search.
+        @param name Field name (must be null-terminated; use a string literal).
+        @return FieldInfo or null if not found.
+    */
+    IL2CPP::FieldInfo *GetFieldFromName(IL2CPP::Il2CppClass *klass, const std::string_view &name);
+
+    /**
+        @brief Gets the offset of the per-class userdata pointer in Il2CppClass (il2cpp_class_get_userdata_offset).
+        @return The offset, or -1 on Unity < 2019.2 where this API does not exist.
+    */
+    int GetClassUserDataOffset();
+
+    /**
+        @brief Sets the per-class userdata pointer (il2cpp_class_set_userdata). No-op on Unity < 2019.2.
+    */
+    void SetClassUserData(IL2CPP::Il2CppClass *klass, void *userData);
+
+    /**
+        @brief Creates a C# string with an explicit length (il2cpp_string_new_len).
+        @param str UTF-8 characters (may contain embedded nulls).
+        @return New mono string object or null.
+    */
+    Structures::Mono::String *CreateMonoStringLen(const std::string_view &str);
+
 #if UNITY_VER >= 232
     /**
         @brief Unmarshals unity object.

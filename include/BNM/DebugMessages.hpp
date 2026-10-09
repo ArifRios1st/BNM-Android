@@ -111,6 +111,7 @@
 
 
 #define DBG_BNM_MSG_SetupBNM_Class_Init "[SetupBNM] il2cpp::vm::Class::Init in lib: %p."
+#define DBG_BNM_MSG_SetupBNM_Class_Init_Failed "[SetupBNM] Failed to resolve il2cpp::vm::Class::Init! BNM cannot initialize without it. Aborting load."
 #define DBG_BNM_MSG_SetupBNM_Image_GetTypes "[SetupBNM] il2cpp::vm::Image::GetTypes in lib: %p."
 #define DBG_BNM_MSG_SetupBNM_image_get_class_exists "[SetupBNM] code has il2cpp_image_get_class. BNM will use it."
 #define DBG_BNM_MSG_SetupBNM_Class_FromIl2CppType "[SetupBNM] il2cpp::vm::Class::FromIl2CppType in lib: %p."
