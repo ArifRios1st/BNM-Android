@@ -9,7 +9,7 @@ BNM::Image::Image(const std::string_view &name) {
 }
 
 BNM::Image::Image(const BNM::IL2CPP::Il2CppAssembly *assembly) {
-    _data = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
+    _data = Internal::il2cppMethods.il2cpp_assembly_get_image ? Internal::il2cppMethods.il2cpp_assembly_get_image(assembly) : nullptr;
 }
 
 std::vector<BNM::Class> BNM::Image::GetClasses(bool includeInner) const {
@@ -67,7 +67,7 @@ std::vector<BNM::Image> BNM::Image::GetImages() {
 
     std::vector<Image> ret{assemblies.size()};
 
-    for (auto assembly : assemblies) ret.emplace_back(Internal::il2cppMethods.il2cpp_assembly_get_image(assembly));
+    if (Internal::il2cppMethods.il2cpp_assembly_get_image) for (auto assembly : assemblies) ret.emplace_back(Internal::il2cppMethods.il2cpp_assembly_get_image(assembly));
 
     return ret;
 }

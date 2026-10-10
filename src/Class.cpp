@@ -14,12 +14,12 @@ Class::Class(const IL2CPP::Il2CppObject *object) {
 }
 
 Class::Class(const IL2CPP::Il2CppType *type) {
-    if (!type) return;
+    if (!type || !Internal::il2cppMethods.il2cpp_class_from_il2cpp_type) return;
     _data = Internal::il2cppMethods.il2cpp_class_from_il2cpp_type(type);
 }
 
 Class::Class(const MonoType *type) {
-    if (!type) return;
+    if (!type || !type->type || !Internal::il2cppMethods.il2cpp_class_from_il2cpp_type) return;
     _data = Internal::il2cppMethods.il2cpp_class_from_il2cpp_type(type->type);
 }
 
@@ -54,7 +54,7 @@ static IL2CPP::Il2CppClass *TryGetClassWithoutImage(const std::string_view &_nam
 
     auto &assemblies = Internal::GetAllAssemblies();
 
-    for (auto assembly : assemblies) {
+    if (Internal::il2cppMethods.il2cpp_assembly_get_image) for (auto assembly : assemblies) {
         auto image = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
         if (auto rootData = Internal::TryGetClassInImage(image, _namespace, rootName); rootData) {
             if (tokens.size() > 1) {
@@ -209,6 +209,8 @@ MethodBase Class::GetMethod(const std::string_view &name, const std::initializer
 
     auto parameters = (uint8_t) parameterNames.size();
 
+    if (!Internal::il2cppMethods.il2cpp_method_get_param_name) return {};
+
     auto method = Internal::IterateMethods(*this, [&name, &parameters, &parameterNames](IL2CPP::MethodInfo *method) {
         if (name != method->name || method->parameters_count != parameters) return false;
         for (uint8_t i = 0; i < parameters; ++i) if (Internal::il2cppMethods.il2cpp_method_get_param_name(method, i) != parameterNames.begin()[i]) return false;
@@ -359,6 +361,7 @@ Class Class::GetArray() const {
     BNM_LOG_ERR_IF(!_data, DBG_BNM_MSG_Class_Dead_Error);
     if (!_data) return {};
     TryInit();
+    if (!Internal::il2cppMethods.il2cpp_array_class_get) return {};
     return Internal::il2cppMethods.il2cpp_array_class_get(_data, 1);
 }
 
@@ -475,7 +478,7 @@ namespace CompileTimeClassProcessors {
         BNM::Image image{};
 
         auto &assemblies = Internal::GetAllAssemblies();
-        for (auto assembly: assemblies) {
+        if (Internal::il2cppMethods.il2cpp_assembly_get_image) for (auto assembly: assemblies) {
             auto currentImage = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
             if (!Internal::CompareImageName(currentImage, classInfo->_imageName)) continue;
             image = currentImage;

@@ -107,7 +107,7 @@ std::vector<BNM::IL2CPP::Il2CppAssembly *> &Internal::GetAllAssemblies() {
 IL2CPP::Il2CppImage *Internal::TryGetImage(const std::string_view &_name) {
     auto &assemblies = Internal::GetAllAssemblies();
 
-    for (auto assembly : assemblies) {
+    if (Internal::il2cppMethods.il2cpp_assembly_get_image) for (auto assembly : assemblies) {
         auto currentImage = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
         if (!Internal::CompareImageName(currentImage, _name)) continue;
         return currentImage;

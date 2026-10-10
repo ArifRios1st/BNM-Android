@@ -35,6 +35,7 @@ void BNM::Internal::LoadDefaults() {
     using namespace BNM::Defaults::Internal;
 
     // mscorlib
+    if (!il2cppMethods.il2cpp_get_corlib) return;
     auto image = il2cppMethods.il2cpp_get_corlib();
     auto SystemStr = BNM_OBFUSCATE_TMP("System");
     auto ObjectStr = BNM_OBFUSCATE_TMP("Object");

@@ -283,6 +283,7 @@ void Internal::SetupBNM() {
     if (il2cppMethods.il2cpp_image_get_class == nullptr)
 #endif
     {
+        if (!il2cppMethods.il2cpp_get_corlib || !il2cppMethods.il2cpp_class_from_name) return;
         auto assemblyClass = il2cppMethods.il2cpp_class_from_name(il2cppMethods.il2cpp_get_corlib(), BNM_OBFUSCATE_TMP("System.Reflection"), BNM_OBFUSCATE_TMP("Assembly"));
         BNM_PTR GetTypesAdr = Class(assemblyClass).GetMethod(BNM_OBFUSCATE_TMP("GetTypes"), 1).GetOffset();
 
@@ -368,6 +369,7 @@ void Internal::SetupBNM() {
     }
     BNM_LOG_DEBUG(DBG_BNM_MSG_SetupBNM_Assembly_GetAllAssemblies, OffsetInLib((void *)il2cppMethods.Assembly$$GetAllAssemblies));
 
+    if (!il2cppMethods.il2cpp_get_corlib) return;
     auto mscorlib = il2cppMethods.il2cpp_get_corlib();
 
     // Get MakeGenericMethod_impl. Depending on the version of Unity, it may be in different classes.
@@ -424,16 +426,18 @@ void Internal::SetupBNM() {
 #endif
 
     auto constructor = listClass.GetMethod(Internal::constructorName, 0)._data;
+    if (!constructor) return;
 
-    auto newMethods = (IL2CPP::MethodInfo **) BNM_malloc(sizeof(IL2CPP::MethodInfo *) * listClass._data->method_count);
-    memcpy(newMethods, listClass._data->methods, sizeof(IL2CPP::MethodInfo *) * listClass._data->method_count);
+    auto methodCount = Internal::SafeCount(listClass._data->method_count, listClass._data->methods);
+    auto newMethods = (IL2CPP::MethodInfo **) BNM_malloc(sizeof(IL2CPP::MethodInfo *) * methodCount);
+    memcpy(newMethods, listClass._data->methods, sizeof(IL2CPP::MethodInfo *) * methodCount);
 
     auto newConstructor = (IL2CPP::MethodInfo *) BNM_malloc(sizeof(IL2CPP::MethodInfo));
     *newConstructor = *constructor;
     newConstructor->methodPointer = (decltype(newConstructor->methodPointer)) EmptyMethod;
     newConstructor->invoker_method = (decltype(newConstructor->invoker_method)) EmptyMethod;
 
-    for (uint16_t i = 0; i < listClass._data->method_count; ++i) {
+    for (uint16_t i = 0; i < methodCount; ++i) {
         if (listClass._data->methods[i] == constructor) {
             newMethods[i] = newConstructor;
             continue;

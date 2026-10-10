@@ -12,6 +12,7 @@ Structures::Mono::String *BNM::CreateMonoString(const std::string_view &str) {
     // to be null-terminated. Use il2cpp_string_new_len with an explicit length to avoid over-reads.
     if (Internal::il2cppMethods.il2cpp_string_new_len) return Internal::il2cppMethods.il2cpp_string_new_len(str.data(), (uint32_t) str.size());
     // Fallback for runtimes where string_new_len was not resolved: copy to a null-terminated buffer
+    if (!Internal::il2cppMethods.il2cpp_string_new) return nullptr;
     std::string tmp{str};
     return Internal::il2cppMethods.il2cpp_string_new(tmp.c_str());
 }

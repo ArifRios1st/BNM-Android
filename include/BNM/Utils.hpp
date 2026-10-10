@@ -50,7 +50,9 @@ namespace BNM {
 
     /**
         @brief Macro function for creating C# strings (BNM::Structures::Mono::String).
-        @return New mono string object
+        @param str UTF-8 string_view. Prefer this over raw pointers: lengths are passed explicitly to
+               il2cpp_string_new_len, so embedded nulls and non-null-terminated views are handled safely.
+        @return New mono string object, or null if the il2cpp string API was not resolved.
     */
     Structures::Mono::String *CreateMonoString(const std::string_view &str);
 
@@ -271,7 +273,7 @@ namespace BNM {
     /**
         @brief Finds a method by name in a class, optionally filtered by argument count (il2cpp_class_get_method_from_name).
         @param klass The class to search.
-        @param name Method name (must be null-terminated; use a string literal).
+        @param name Method name (any string_view is accepted; internally copied to a null-terminated buffer).
         @param argsCount Required argument count, or -1 to match any overload.
         @return MethodInfo or null if not found.
     */
@@ -280,7 +282,7 @@ namespace BNM {
     /**
         @brief Finds a field by name in a class (il2cpp_class_get_field_from_name).
         @param klass The class to search.
-        @param name Field name (must be null-terminated; use a string literal).
+        @param name Field name (any string_view is accepted; internally copied to a null-terminated buffer).
         @return FieldInfo or null if not found.
     */
     IL2CPP::FieldInfo *GetFieldFromName(IL2CPP::Il2CppClass *klass, const std::string_view &name);

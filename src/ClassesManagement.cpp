@@ -88,6 +88,7 @@ static void ModifyClass(MANAGEMENT_STRUCTURES::CustomClass *customClass, Class t
     BNM_LOG_DEBUG(DBG_BNM_MSG_ClassesManagement_ModifyClasses_Target, target.str().data());
 
     auto klass = target._data;
+    if (!klass) [[unlikely]] return;
 
     auto baseType = customClass->_baseType.ToClass();
 
@@ -188,7 +189,7 @@ static void CreateClass(MANAGEMENT_STRUCTURES::CustomClass *customClass, const C
     Image image{};
     if (classInfo._imageName) {
         auto &assemblies = Internal::GetAllAssemblies();
-        for (auto assembly: assemblies) {
+        if (Internal::il2cppMethods.il2cpp_assembly_get_image) for (auto assembly: assemblies) {
             auto currentImage = Internal::il2cppMethods.il2cpp_assembly_get_image(assembly);
             if (!Internal::CompareImageName(currentImage, classInfo._imageName)) continue;
             image = currentImage;
@@ -495,7 +496,7 @@ static void CreateClass(MANAGEMENT_STRUCTURES::CustomClass *customClass, const C
     klass->gc_desc = nullptr;
 
     // Use Class::Init, to setup GC desc
-    Internal::il2cppMethods.Class$$Init(klass);
+    if (Internal::il2cppMethods.Class$$Init) Internal::il2cppMethods.Class$$Init(klass);
 
     // Add a class to the list of created classes
     Internal::ClassesManagement::bnmClassesMap.AddClass(image.GetInfo(), klass);
@@ -846,7 +847,7 @@ static IL2CPP::MethodInfo *CreateMethod(MANAGEMENT_STRUCTURES::CustomMethod *met
         }
 #endif
     }
-    myInfo->rgctx_data = nullptr;
+    myInfo->rgctx_data = nullptr; // Required for generic
     myInfo->genericMethod = nullptr;
 
     method->_parameterTypes.clear();
@@ -919,7 +920,7 @@ static void SetupClassOwner(IL2CPP::Il2CppClass *target, IL2CPP::Il2CppClass *ow
 
 static void SetupClassParent(IL2CPP::Il2CppClass *target, IL2CPP::Il2CppClass *parent) {
     // All C# classes should have parent. Only structs don't have it, but BNM don't allow to define valid structs
-    if (!parent) [[unlikely]] return;
+    if (!target || !parent) [[unlikely]] return;
 
     if (Internal::bnmAllocatedClasses.contains(target)) BNM_free(target->typeHierarchy);
     Internal::bnmAllocatedClasses.insert(target);
@@ -932,7 +933,7 @@ static void SetupClassParent(IL2CPP::Il2CppClass *target, IL2CPP::Il2CppClass *p
 }
 
 static void GetAllInterfaces(IL2CPP::Il2CppClass *parent, IL2CPP::Il2CppClass *interface, std::vector<IL2CPP::Il2CppClass *> &outInterfaces) { // NOLINT
-    Internal::il2cppMethods.Class$$Init(interface);
+    if (Internal::il2cppMethods.Class$$Init) Internal::il2cppMethods.Class$$Init(interface);
     if (!HasInterface(parent, interface)) outInterfaces.push_back(interface);
     if (!interface->interfaces_count || interface->interfaces_count == (uint16_t) -1) return;
 
@@ -945,6 +946,7 @@ static void GetAllInterfaces(IL2CPP::Il2CppClass *parent, IL2CPP::Il2CppClass *i
 
 static bool HasInterface(IL2CPP::Il2CppClass *parent, IL2CPP::Il2CppClass *interface) { // NOLINT
     if (!parent || !interface) return false;
+    if (parent->interfaces_count == (uint16_t) -1) return false;
 #if UNITY_VER >= 606
     for (uint16_t i = 0; i < parent->interfaces_count; ++i) if (parent->interfaces[i].interfaceType == interface) return true;
 #else

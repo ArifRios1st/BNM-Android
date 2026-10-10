@@ -20,6 +20,7 @@ BNM::Exception BNM::TryInvoke(const std::function<void()> &func) {
     info.invoker_method = (BNM::IL2CPP::InvokerMethod) +[](std::function<void()> *func) -> void { (*func)(); };
 #endif
     BNM::IL2CPP::Il2CppException *exception = nullptr;
+    if (!Internal::il2cppMethods.il2cpp_runtime_invoke) return nullptr;
     Internal::il2cppMethods.il2cpp_runtime_invoke(&info, nullptr, nullptr, &exception);
     return exception;
 }
