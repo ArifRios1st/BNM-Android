@@ -84,7 +84,7 @@ namespace BNM {
 */
 #define BNM_GAME_CLASS(NameSpace, ClassName, BaseClass, ...) \
     struct ClassName : public BaseClass { \
-        constexpr ClassName() : BaseClass() {} \
+        ClassName() : BaseClass() {} \
         \
         static inline BNM::Class StaticClass() { \
             static auto cls = []() -> BNM::Class { \
@@ -136,7 +136,7 @@ namespace BNM {
 */
 #define BNM_GAME_INNER_CLASS(OuterClass, InnerClassName, BaseClass) \
     struct InnerClassName : public BaseClass { \
-        constexpr InnerClassName() : BaseClass() {} \
+        InnerClassName() : BaseClass() {} \
         \
         static inline BNM::Class StaticClass() { \
             static auto cls = OuterClass::StaticClass().GetInnerClass(BNM_OBFUSCATE(#InnerClassName)); \
