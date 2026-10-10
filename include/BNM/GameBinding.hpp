@@ -84,8 +84,7 @@ namespace BNM {
 */
 #define BNM_GAME_CLASS(NameSpace, ClassName, BaseClass, ...) \
     struct ClassName : public BaseClass { \
-        using BaseClass::BaseClass; \
-        constexpr ClassName() : BaseClass() {} \
+        ClassName() : BaseClass() {} \
         \
         static inline BNM::Class StaticClass() { \
             static auto cls = []() -> BNM::Class { \
@@ -137,8 +136,7 @@ namespace BNM {
 */
 #define BNM_GAME_INNER_CLASS(OuterClass, InnerClassName, BaseClass) \
     struct InnerClassName : public BaseClass { \
-        using BaseClass::BaseClass; \
-        constexpr InnerClassName() : BaseClass() {} \
+        InnerClassName() : BaseClass() {} \
         \
         static inline BNM::Class StaticClass() { \
             static auto cls = OuterClass::StaticClass().GetInnerClass(BNM_OBFUSCATE(#InnerClassName)); \
@@ -276,86 +274,98 @@ namespace BNM {
     @param Name Method name in C#.
     @param RetType Return type.
     @param ParamCount Number of parameters in C#.
-    @param ... Method parameter list.
+    @param ParamsDecl Parenthesized parameter declaration list, e.g. (int damage, bool critical).
+    @param ParamsCall Parenthesized call argument list, e.g. (damage, critical).
 */
-#define BNM_BINDING_METHOD(Name, RetType, ParamCount, ...) \
-    inline RetType Name(__VA_ARGS__) { \
+#define BNM_BINDING_METHOD(Name, RetType, ParamCount, ParamsDecl, ParamsCall) \
+    inline RetType Name ParamsDecl { \
         if (!this || !BNM::CheckForNull((void *)this)) return BNM::Detail::DefaultReturnValue<RetType>(); \
         static auto _method = StaticClass().GetMethod(BNM_OBFUSCATE(#Name), ParamCount).template cast<RetType>(); \
-        return _method[(void *)this](__VA_ARGS__); \
+        return _method[(void *)this] ParamsCall; \
     }
 
 /**
     @brief Bind an instance method by specific parameter types (for overloading resolution).
     @param Name Method name in C#.
     @param RetType Return type.
-    @param TypesList Initializer list of BNM::CompileTimeClass / BNM::Class types.
-    @param ... Method parameter list.
+    @param TypesList Parenthesized initializer list of BNM::CompileTimeClass / BNM::Class types.
+                    Must be wrapped in parentheses so commas inside the list stay macro-safe:
+                    (std::initializer_list<BNM::CompileTimeClass>{ClassA, ClassB}).
+    @param ParamsDecl Parenthesized parameter declaration list.
+    @param ParamsCall Parenthesized call argument list.
 */
-#define BNM_BINDING_METHOD_TYPES(Name, RetType, TypesList, ...) \
-    inline RetType Name(__VA_ARGS__) { \
+#define BNM_BINDING_METHOD_TYPES(Name, RetType, TypesList, ParamsDecl, ParamsCall) \
+    inline RetType Name ParamsDecl { \
         if (!this || !BNM::CheckForNull((void *)this)) return BNM::Detail::DefaultReturnValue<RetType>(); \
         static auto _method = StaticClass().GetMethod(BNM_OBFUSCATE(#Name), TypesList).template cast<RetType>(); \
-        return _method[(void *)this](__VA_ARGS__); \
+        return _method[(void *)this] ParamsCall; \
     }
 
-#define BNM_BINDING_METHOD_TYPE(Name, RetType, TypesList, ...) BNM_BINDING_METHOD_TYPES(Name, RetType, TypesList, __VA_ARGS__)
+#define BNM_BINDING_METHOD_TYPE(Name, RetType, TypesList, ParamsDecl, ParamsCall) BNM_BINDING_METHOD_TYPES(Name, RetType, TypesList, ParamsDecl, ParamsCall)
 
 /**
     @brief Bind an instance method by parameter names (for overloading resolution).
     @param Name Method name in C#.
     @param RetType Return type.
-    @param NamesList Initializer list of parameter names as string_views.
-    @param ... Method parameter list.
+    @param NamesList Parenthesized initializer list of parameter name string_views.
+                    Must be wrapped in parentheses so commas inside the list stay macro-safe:
+                    (std::initializer_list<std::string_view>{"first", "second"}).
+    @param ParamsDecl Parenthesized parameter declaration list.
+    @param ParamsCall Parenthesized call argument list.
 */
-#define BNM_BINDING_METHOD_NAMES(Name, RetType, NamesList, ...) \
-    inline RetType Name(__VA_ARGS__) { \
+#define BNM_BINDING_METHOD_NAMES(Name, RetType, NamesList, ParamsDecl, ParamsCall) \
+    inline RetType Name ParamsDecl { \
         if (!this || !BNM::CheckForNull((void *)this)) return BNM::Detail::DefaultReturnValue<RetType>(); \
         static auto _method = StaticClass().GetMethod(BNM_OBFUSCATE(#Name), NamesList).template cast<RetType>(); \
-        return _method[(void *)this](__VA_ARGS__); \
+        return _method[(void *)this] ParamsCall; \
     }
 
-#define BNM_BINDING_METHOD_NAME(Name, RetType, NamesList, ...) BNM_BINDING_METHOD_NAMES(Name, RetType, NamesList, __VA_ARGS__)
+#define BNM_BINDING_METHOD_NAME(Name, RetType, NamesList, ParamsDecl, ParamsCall) BNM_BINDING_METHOD_NAMES(Name, RetType, NamesList, ParamsDecl, ParamsCall)
 
 /**
     @brief Bind a static method by parameter count.
     @param Name Static method name in C#.
     @param RetType Return type.
     @param ParamCount Number of parameters in C#.
-    @param ... Method parameter list.
+    @param ParamsDecl Parenthesized parameter declaration list, e.g. (int damage, bool critical).
+    @param ParamsCall Parenthesized call argument list, e.g. (damage, critical).
 */
-#define BNM_BINDING_STATIC_METHOD(Name, RetType, ParamCount, ...) \
-    static inline RetType Name(__VA_ARGS__) { \
+#define BNM_BINDING_STATIC_METHOD(Name, RetType, ParamCount, ParamsDecl, ParamsCall) \
+    static inline RetType Name ParamsDecl { \
         static auto _method = StaticClass().GetMethod(BNM_OBFUSCATE(#Name), ParamCount).template cast<RetType>(); \
-        return _method(__VA_ARGS__); \
+        return _method ParamsCall; \
     }
 
 /**
-    @brief Bind a static method by parameter types.
+    @brief Bind a static method by parameter types (for overloading resolution).
     @param Name Static method name in C#.
     @param RetType Return type.
-    @param TypesList Initializer list of BNM::CompileTimeClass / BNM::Class types.
-    @param ... Method parameter list.
+    @param TypesList Parenthesized initializer list of BNM::CompileTimeClass / BNM::Class types
+                    (see BNM_BINDING_METHOD_TYPES for the parenthesis requirement).
+    @param ParamsDecl Parenthesized parameter declaration list.
+    @param ParamsCall Parenthesized call argument list.
 */
-#define BNM_BINDING_STATIC_METHOD_TYPES(Name, RetType, TypesList, ...) \
-    static inline RetType Name(__VA_ARGS__) { \
+#define BNM_BINDING_STATIC_METHOD_TYPES(Name, RetType, TypesList, ParamsDecl, ParamsCall) \
+    static inline RetType Name ParamsDecl { \
         static auto _method = StaticClass().GetMethod(BNM_OBFUSCATE(#Name), TypesList).template cast<RetType>(); \
-        return _method(__VA_ARGS__); \
+        return _method ParamsCall; \
     }
 
-#define BNM_BINDING_STATIC_METHOD_TYPE(Name, RetType, TypesList, ...) BNM_BINDING_STATIC_METHOD_TYPES(Name, RetType, TypesList, __VA_ARGS__)
+#define BNM_BINDING_STATIC_METHOD_TYPE(Name, RetType, TypesList, ParamsDecl, ParamsCall) BNM_BINDING_STATIC_METHOD_TYPES(Name, RetType, TypesList, ParamsDecl, ParamsCall)
 
 /**
-    @brief Bind a static method by parameter names.
+    @brief Bind a static method by parameter names (for overloading resolution).
     @param Name Static method name in C#.
     @param RetType Return type.
-    @param NamesList Initializer list of parameter names as string_views.
-    @param ... Method parameter list.
+    @param NamesList Parenthesized initializer list of parameter name string_views
+                    (see BNM_BINDING_METHOD_NAMES for the parenthesis requirement).
+    @param ParamsDecl Parenthesized parameter declaration list.
+    @param ParamsCall Parenthesized call argument list.
 */
-#define BNM_BINDING_STATIC_METHOD_NAMES(Name, RetType, NamesList, ...) \
-    static inline RetType Name(__VA_ARGS__) { \
+#define BNM_BINDING_STATIC_METHOD_NAMES(Name, RetType, NamesList, ParamsDecl, ParamsCall) \
+    static inline RetType Name ParamsDecl { \
         static auto _method = StaticClass().GetMethod(BNM_OBFUSCATE(#Name), NamesList).template cast<RetType>(); \
-        return _method(__VA_ARGS__); \
+        return _method ParamsCall; \
     }
 
-#define BNM_BINDING_STATIC_METHOD_NAME(Name, RetType, NamesList, ...) BNM_BINDING_STATIC_METHOD_NAMES(Name, RetType, NamesList, __VA_ARGS__)
+#define BNM_BINDING_STATIC_METHOD_NAME(Name, RetType, NamesList, ParamsDecl, ParamsCall) BNM_BINDING_STATIC_METHOD_NAMES(Name, RetType, NamesList, ParamsDecl, ParamsCall)
