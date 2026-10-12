@@ -127,10 +127,10 @@ When methods share the same name and parameter count, resolve them using paramet
 BNM_GAME_CLASS("Game", CombatSystem, BNM::IL2CPP::Il2CppObject)
 
     // Attack(float, Target)
-    BNM_BINDING_METHOD_TYPES(Attack, void, ({"System.Single", "Game.Target"}), float power, void *target);
+    BNM_BINDING_METHOD_TYPES(Attack, void, (std::initializer_list<BNM::CompileTimeClass>{"System.Single", "Game.Target"}), (float power, void *target), (power, target));
 
     // Attack(int, int)
-    BNM_BINDING_METHOD_TYPES(Attack, void, ({"System.Int32", "System.Int32"}), int minDmg, int maxDmg);
+    BNM_BINDING_METHOD_TYPES(Attack, void, (std::initializer_list<BNM::CompileTimeClass>{"System.Int32", "System.Int32"}), (int minDmg, int maxDmg), (minDmg, maxDmg));
 
 BNM_GAME_CLASS_END
 ```
@@ -140,10 +140,70 @@ BNM_GAME_CLASS_END
 BNM_GAME_CLASS("Game", AudioSystem, BNM::IL2CPP::Il2CppObject)
 
     // PlaySound(clipName, volume)
-    BNM_BINDING_METHOD_NAMES(PlaySound, void, ({"clipName", "volume"}), const char *clipName, float volume);
+    BNM_BINDING_METHOD_NAMES(PlaySound, void, (std::initializer_list<std::string_view>{"clipName", "volume"}), (const char *clipName, float volume), (clipName, volume));
 
     // PlaySound(audioId, delay)
-    BNM_BINDING_METHOD_NAMES(PlaySound, void, ({"audioId", "delay"}), int audioId, float delay);
+    BNM_BINDING_METHOD_NAMES(PlaySound, void, (std::initializer_list<std::string_view>{"audioId", "delay"}), (int audioId, float delay), (audioId, delay));
 
 BNM_GAME_CLASS_END
 ```
+
+---
+
+## 6. Generic Game Classes & Methods
+
+C# generic types need an explicit `GetGeneric({...})` at resolution time. The `BNM_GAME_GENERIC_CLASS_*` family handles the backtick arity name and the type-argument resolution for you. **Complex types in generic macros are always written inside parentheses** so commas inside template arguments never split macro arguments.
+
+### A. Generic Classes (`BNM_GAME_GENERIC_CLASS_1/2/3`, `_EX`)
+
+```cpp
+// C# class: class Singleton<T> : MonoBehaviour
+BNM_GAME_GENERIC_CLASS_1("", Singleton, (BNM::UnityEngine::MonoBehaviour), T, "Assembly-CSharp.dll")
+    BNM_BINDING_GENERIC_STATIC_FIELD(instance, (T *));
+    BNM_BINDING_GENERIC_METHOD_1(Take, (T *), T, 0, (), ());
+BNM_GAME_GENERIC_CLASS_END
+
+// C# class: class Pair<F, S>
+BNM_GAME_GENERIC_CLASS_2("", Pair, (BNM::IL2CPP::Il2CppObject), F, S)
+    BNM_BINDING_GENERIC_FIELD(first, (F *));
+    BNM_BINDING_GENERIC_FIELD(second, (S *));
+BNM_GAME_GENERIC_CLASS_END
+```
+
+Type arguments resolve through `BNM::Detail::TypeClassResolver<T>`: game binding structs use their `StaticClass()`, primitives/BNM Unity types fall back to `BNM::Defaults::Get<T>()`. A generic base class (CRTP) works too: `BNM_GAME_GENERIC_CLASS_1("", Settings, (GB::Singleton<T>), T)`.
+
+For a C++ name that differs from the C# name (arity-suffixed overload sets, dotted nested names) or arity ≥ 4, use the `_EX` escape hatch, which takes the full metadata name and the template declaration explicitly:
+
+```cpp
+BNM_GAME_GENERIC_CLASS_EX("System", Action_2, "Action`2", (BNM::IL2CPP::Il2CppObject),
+    (typename T1, typename T2), (BNM::Detail::TypeClassResolver<T1>::Get(), BNM::Detail::TypeClassResolver<T2>::Get()))
+BNM_GAME_GENERIC_CLASS_END
+```
+
+### B. Generic Methods (`BNM_BINDING_[STATIC_]GENERIC_METHOD_*`)
+
+Generic methods become C++ template methods resolving through `GetMethod(...).GetGeneric({...})`. Each family (by count / `_TYPES` / `_NAMES`) exists for instance and static (`STATIC_` after `BNM_BINDING_`), with arity wrappers `_1` / `_2` / `_3` and an `_EX` form taking `(RetType), (TypeDecl), (Resolvers)`:
+
+```cpp
+BNM_GAME_CLASS("", MobMaster, BNM::UnityEngine::MonoBehaviour)
+
+    BNM_BINDING_GENERIC_METHOD_1(Take, (T *), T, 0, (), ());                             // T Take<T>()
+    BNM_BINDING_STATIC_GENERIC_METHOD_1(Find, (T *), T, 1, (int id), (id));              // static T Find<T>(int)
+    BNM_BINDING_GENERIC_METHOD_TYPES_1(Set, (void), T, (std::initializer_list<BNM::CompileTimeClass>{BNM::Defaults::Get<int>()}), (T * value), (value));
+
+BNM_GAME_CLASS_END
+```
+
+> **Explicit template arguments:** a generic method whose type parameters appear only in the return type cannot be deduced and must be called explicitly — `MobMaster::Find<MobMaster>(1)`, `instance->Take<MobMaster>()`.
+
+### C. Fields & Properties with Comma-Bearing Types (`BNM_BINDING_GENERIC_FIELD/PROPERTY`)
+
+The plain field/property macros break on types containing commas (`Dictionary<K, V> *`). The `_GENERIC_` variants take the whole type parenthesized:
+
+```cpp
+BNM_BINDING_GENERIC_FIELD(cache, (BNM::Structures::Mono::Dictionary<BNM::Structures::Mono::String, MobMaster *> *));
+BNM_BINDING_GENERIC_STATIC_FIELD(table, (BNM::Structures::Mono::List<Pair *> *));
+BNM_BINDING_GENERIC_PROPERTY(Current, (MobMaster *));            // GetCurrent() / SetCurrent()
+BNM_BINDING_GENERIC_STATIC_PROPERTY(Instance, (MobMaster *));
+```
+
