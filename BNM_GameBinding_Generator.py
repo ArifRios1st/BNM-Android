@@ -208,6 +208,29 @@ BNM_DELEGATE_FAMILIES = frozenset({
 BNM_COROUTINE_HEADER = "BNM/Coroutine.hpp"
 BNM_COROUTINE_GENERIC = "BNM::Coroutine::Generic::IEnumerator"
 
+# BCL collection types served natively by BNM's Mono structures
+# (include/BNM/MonoStructures/). Their generated binding files are skipped and
+# every reference maps to the native type instead:
+#   HashSet<T>              -> BNM::Structures::Mono::HashSet<T> *
+#   Queue<T>                -> BNM::Structures::Mono::Queue<T> *
+#   Stack<T>                -> BNM::Structures::Mono::Stack<T> *
+#   IReadOnlyList<T>        -> BNM::Structures::Mono::IReadOnlyList<T> *
+#   IReadOnlyCollection<T>  -> BNM::Structures::Mono::IReadOnlyCollection<T> *
+BNM_COLLECTION_HEADERS = {
+    "HashSet": "BNM/MonoStructures/HashSet.hpp",
+    "Queue": "BNM/MonoStructures/Queue.hpp",
+    "Stack": "BNM/MonoStructures/Stack.hpp",
+    "IReadOnlyList": "BNM/MonoStructures/ReadOnlyList.hpp",
+    "IReadOnlyCollection": "BNM/MonoStructures/ReadOnlyList.hpp",
+}
+BNM_COLLECTION_QUALNAMES = {
+    "HashSet": "BNM::Structures::Mono::HashSet",
+    "Queue": "BNM::Structures::Mono::Queue",
+    "Stack": "BNM::Structures::Mono::Stack",
+    "IReadOnlyList": "BNM::Structures::Mono::IReadOnlyList",
+    "IReadOnlyCollection": "BNM::Structures::Mono::IReadOnlyCollection",
+}
+
 CPP_KEYWORDS = {
     "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit",
     "atomic_noexcept", "auto", "bitand", "bitor", "bool", "break", "case", "catch",
@@ -468,6 +491,12 @@ class DumpParser:
                 inner = self._cpp_template_arg(self._split_top(gen_args)[0], by_value, type_params_in_scope)
                 self.cur_bnm_includes.add(BNM_COROUTINE_HEADER)
                 return f"{BNM_COROUTINE_GENERIC}<{inner}> *"
+            # BCL collection types -> BNM's native Mono structures
+            # (HashSet/Queue/Stack/IReadOnlyList/IReadOnlyCollection).
+            if base_name in BNM_COLLECTION_HEADERS:
+                inner = self._cpp_template_arg(self._split_top(gen_args)[0], by_value, type_params_in_scope)
+                self.cur_bnm_includes.add(BNM_COLLECTION_HEADERS[base_name])
+                return f"{BNM_COLLECTION_QUALNAMES[base_name]}<{inner}> *"
             # Generic instantiation of a generated binding type or BNM object type
             # (e.g. MySingleton<PlayerController>, Receiver<T>, Duo<F, S>, Holder.
             # Operator<TVal>). Pass the FULL base path (with any "Outer." prefix)
@@ -735,6 +764,17 @@ class DumpParser:
                         # emitted at all.
                         if (current_namespace in ("System.Collections", "System.Collections.Generic")
                                 and simple == "IEnumerator"):
+                            current_type = {"_skip": True}
+                            is_enum = False
+                            brace_depth = 1 if "{" in s else 0
+                            continue
+
+                        # BCL collection types served natively by BNM's Mono
+                        # structures (BNM/MonoStructures/): references map to
+                        # BNM::Structures::Mono::HashSet/Queue/Stack/IReadOnlyList/
+                        # IReadOnlyCollection, so their generated files are skipped.
+                        if (current_namespace == "System.Collections.Generic"
+                                and simple in BNM_COLLECTION_HEADERS):
                             current_type = {"_skip": True}
                             is_enum = False
                             brace_depth = 1 if "{" in s else 0

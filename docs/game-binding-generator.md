@@ -93,6 +93,8 @@ GameBinding/
 | `System.MulticastDelegate` | `BNM::MulticastDelegate<void> *` |
 | `System.Collections.IEnumerator` | `BNM::Coroutine::IEnumerator *` |
 | `System.Collections.Generic.IEnumerator<T>` | `BNM::Coroutine::Generic::IEnumerator<T> *` |
+| `HashSet<T>` / `Queue<T>` / `Stack<T>` | `BNM::Structures::Mono::HashSet/Queue/Stack<T> *` |
+| `IReadOnlyList<T>` / `IReadOnlyCollection<T>` | `BNM::Structures::Mono::IReadOnlyList/IReadOnlyCollection<T> *` |
 | `string` / `T[]` / `List<T>` / `Dictionary<K, V>` | `BNM::Structures::Mono::{String, Array, List, Dictionary}` |
 | Unity engine types (`GameObject`, `MonoBehaviour`, ...) | `BNM::UnityEngine::...` |
 
@@ -101,8 +103,9 @@ GameBinding/
 - Compiler-generated C# types: state machines (`<Method>d__N`), closures
   (`<>c`, `<>c__DisplayClass`), anonymous types, `<Module>`,
   `<PrivateImplementationDetails>` — they are never referenced by real types.
-- BCL delegate families and the two `IEnumerator` interfaces listed above
-  (their files are not emitted; references map to BNM native types).
+- BCL delegate families, the two `IEnumerator` interfaces, and the
+  `HashSet/Queue/Stack/IReadOnlyList/IReadOnlyCollection` collections listed
+  above (their files are not emitted; references map to BNM native types).
 - BNM-native Unity types (already provided by `include/BNM/UnityStructures/`).
 - Explicit interface implementations keep a C++ identifier (`NameSpace_Method`)
   with the original name passed to the runtime lookup; C# names colliding with
