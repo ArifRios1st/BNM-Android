@@ -157,20 +157,20 @@ C# generic types need an explicit `GetGeneric({...})` at resolution time. The `B
 ### A. Generic Classes (`BNM_GAME_GENERIC_CLASS_1/2/3`, `_EX`)
 
 ```cpp
-// C# class: class Singleton<T> : MonoBehaviour
-BNM_GAME_GENERIC_CLASS_1("", Singleton, (BNM::UnityEngine::MonoBehaviour), T, "Assembly-CSharp.dll")
+// C# class: class MySingleton<T> : MonoBehaviour
+BNM_GAME_GENERIC_CLASS_1("", MySingleton, (BNM::UnityEngine::MonoBehaviour), T, "Assembly-CSharp.dll")
     BNM_BINDING_GENERIC_STATIC_FIELD(instance, (T *));
     BNM_BINDING_GENERIC_METHOD_1(Take, (T *), T, 0, (), ());
 BNM_GAME_GENERIC_CLASS_END
 
-// C# class: class Pair<F, S>
-BNM_GAME_GENERIC_CLASS_2("", Pair, (BNM::IL2CPP::Il2CppObject), F, S)
+// C# class: class Duo<F, S>
+BNM_GAME_GENERIC_CLASS_2("", Duo, (BNM::IL2CPP::Il2CppObject), F, S)
     BNM_BINDING_GENERIC_FIELD(first, (F *));
     BNM_BINDING_GENERIC_FIELD(second, (S *));
 BNM_GAME_GENERIC_CLASS_END
 ```
 
-Type arguments resolve through `BNM::Detail::TypeClassResolver<T>`: game binding structs use their `StaticClass()`, primitives/BNM Unity types fall back to `BNM::Defaults::Get<T>()`. A generic base class (CRTP) works too: `BNM_GAME_GENERIC_CLASS_1("", Settings, (GB::Singleton<T>), T)`.
+Type arguments resolve through `BNM::Detail::TypeClassResolver<T>`: game binding structs use their `StaticClass()`, primitives/BNM Unity types fall back to `BNM::Defaults::Get<T>()`. A generic base class (CRTP) works too: `BNM_GAME_GENERIC_CLASS_1("", GameSettings, (GB::MySingleton<T>), T)`.
 
 For a C++ name that differs from the C# name (arity-suffixed overload sets, dotted nested names) or arity ≥ 4, use the `_EX` escape hatch, which takes the full metadata name and the template declaration explicitly:
 
@@ -185,7 +185,7 @@ BNM_GAME_GENERIC_CLASS_END
 Generic methods become C++ template methods resolving through `GetMethod(...).GetGeneric({...})`. Each family (by count / `_TYPES` / `_NAMES`) exists for instance and static (`STATIC_` after `BNM_BINDING_`), with arity wrappers `_1` / `_2` / `_3` and an `_EX` form taking `(RetType), (TypeDecl), (Resolvers)`:
 
 ```cpp
-BNM_GAME_CLASS("", MobMaster, BNM::UnityEngine::MonoBehaviour)
+BNM_GAME_CLASS("", PlayerController, BNM::UnityEngine::MonoBehaviour)
 
     BNM_BINDING_GENERIC_METHOD_1(Take, (T *), T, 0, (), ());                             // T Take<T>()
     BNM_BINDING_STATIC_GENERIC_METHOD_1(Find, (T *), T, 1, (int id), (id));              // static T Find<T>(int)
@@ -194,16 +194,32 @@ BNM_GAME_CLASS("", MobMaster, BNM::UnityEngine::MonoBehaviour)
 BNM_GAME_CLASS_END
 ```
 
-> **Explicit template arguments:** a generic method whose type parameters appear only in the return type cannot be deduced and must be called explicitly — `MobMaster::Find<MobMaster>(1)`, `instance->Take<MobMaster>()`.
+> **Explicit template arguments:** a generic method whose type parameters appear only in the return type cannot be deduced and must be called explicitly — `PlayerController::Find<PlayerController>(1)`, `instance->Take<PlayerController>()`.
 
 ### C. Fields & Properties with Comma-Bearing Types (`BNM_BINDING_GENERIC_FIELD/PROPERTY`)
 
 The plain field/property macros break on types containing commas (`Dictionary<K, V> *`). The `_GENERIC_` variants take the whole type parenthesized:
 
 ```cpp
-BNM_BINDING_GENERIC_FIELD(cache, (BNM::Structures::Mono::Dictionary<BNM::Structures::Mono::String, MobMaster *> *));
-BNM_BINDING_GENERIC_STATIC_FIELD(table, (BNM::Structures::Mono::List<Pair *> *));
-BNM_BINDING_GENERIC_PROPERTY(Current, (MobMaster *));            // GetCurrent() / SetCurrent()
-BNM_BINDING_GENERIC_STATIC_PROPERTY(Instance, (MobMaster *));
+BNM_BINDING_GENERIC_FIELD(cache, (BNM::Structures::Mono::Dictionary<BNM::Structures::Mono::String, PlayerController *> *));
+BNM_BINDING_GENERIC_STATIC_FIELD(table, (BNM::Structures::Mono::List<Duo *> *));
+BNM_BINDING_GENERIC_PROPERTY(Current, (PlayerController *));            // GetCurrent() / SetCurrent()
+BNM_BINDING_GENERIC_STATIC_PROPERTY(Instance, (PlayerController *));
 ```
 
+---
+
+## 7. Generating Bindings Automatically
+
+Writing these macros by hand for a whole game is impractical. The repository
+ships `BNM_GameBinding_Generator.py` at its root: it reads a Cpp2IL /
+Il2CppDumper `dump.cs` and emits one header per game type (plus an aggregate
+`GameBinding.hpp`), using exactly the macros documented above — including the
+BNM-native mappings for delegates, `IEnumerator`, Mono structures and Unity
+types.
+
+```bash
+python BNM_GameBinding_Generator.py dump.cs ./generated
+```
+
+See **[Game Binding Generator](game-binding-generator.md)** for the full guide.

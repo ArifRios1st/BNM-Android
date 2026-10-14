@@ -34,6 +34,8 @@ Welcome to the official documentation for **BNM (ByNameModding)** — a modern, 
    - Declarative fields (`BNM_BINDING_FIELD`), properties (`BNM_BINDING_PROPERTY`), and methods (`BNM_BINDING_METHOD`)
    - Method overload resolution via parameter types and parameter names
    - Dynamic interface querying & casting (`.As<T>()`, `.IsA<T>()`)
+   - Generic classes & methods (`BNM_GAME_GENERIC_CLASS_*`, `BNM_BINDING_*GENERIC_METHOD_*`)
+   - **[Game Binding Generator](game-binding-generator.md)** (`BNM_GameBinding_Generator.py`): generate the whole game's bindings from `dump.cs`
 
 5. **[Custom Classes & Hooking](custom-classes-and-hooking.md)**
    - Creating runtime C# classes (`BNM_CustomClass`, `BNM_CustomField`, `BNM_CustomMethod`)

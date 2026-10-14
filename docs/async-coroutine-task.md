@@ -60,6 +60,15 @@ void RunCoroutine(BNM::UnityEngine::MonoBehaviour *behaviour) {
 }
 ```
 
+### C. Typed `IEnumerator<T>` view
+C# `System.Collections.Generic.IEnumerator<T>` maps to `BNM::Coroutine::Generic::IEnumerator<T>` - a typed view that derives from `BNM::Coroutine::IEnumerator` and adds no state of its own (the `T` is a compile-time tag):
+
+```cpp
+// Generated game bindings use it for IEnumerator<T> returns/parameters:
+BNM::Coroutine::Generic::IEnumerator<BNM::IL2CPP::Il2CppObject> *e = gameObject->GetEnumerator();
+behaviour->StartCoroutine(e);   // any Coroutine::* pointer is a valid IL2CPP IEnumerator
+```
+
 ---
 
 ## 2. C++20 Task Bridge (`BNM::Task<T>`)

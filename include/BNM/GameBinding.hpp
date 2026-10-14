@@ -194,7 +194,7 @@ namespace BNM {
 /**
     @brief Declare a C# interface binding struct.
     @param NameSpace C# namespace (e.g. "Game.Core" or "" for global).
-    @param InterfaceName C# interface name (e.g. IDamageable, IMove).
+    @param InterfaceName C# interface name (e.g. IDamageable, IInteractable).
     @param ... Optional DLL Image name.
 */
 #define BNM_GAME_INTERFACE(NameSpace, InterfaceName, ...) \
@@ -425,7 +425,7 @@ namespace BNM {
     @brief Declare a generic C# class binding as a C++ template struct.
     @param NameSpace C# namespace (e.g. "Game.Core" or "" for global).
     @param ClassName C++ struct name (kept identical to the C# class name unless arity-suffixed).
-    @param CSharpName Full C# metadata name including the backtick arity, e.g. "Singleton`1".
+    @param CSharpName Full C# metadata name including the backtick arity, e.g. "MySingleton`1".
     @param BaseClass Parenthesized C++ base class, e.g. (BNM::UnityEngine::MonoBehaviour).
     @param TypeDecl Parenthesized template parameter declaration, e.g. (typename T1, typename T2).
     @param Resolvers Parenthesized GetGeneric type-argument list,
@@ -575,7 +575,7 @@ namespace BNM {
     @param ParamsDecl Parenthesized parameter declaration list.
     @param ParamsCall Parenthesized call argument list.
     @note Generic methods whose type parameters appear only in the return type must be
-          called with an explicit template argument list, e.g. GetOrCreate<MobMaster>().
+          called with an explicit template argument list, e.g. GetOrCreate<PlayerController>().
 */
 #define BNM_BINDING_GENERIC_METHOD_EX(Name, RetType, TypeDecl, Resolvers, ParamCount, ParamsDecl, ParamsCall) \
     template<BNM_UNPAREN TypeDecl> \

@@ -108,7 +108,49 @@ if (playerScores->TryGetValue(BNM::CreateMonoString("Player1"), &score)) {
 
 ---
 
-## 5. Extended .NET Data Types
+## 5. Collections: `Queue<T>`, `Stack<T>`, `HashSet<T>`, `IReadOnlyList<T>`
+
+Native wrappers for the remaining `System.Collections.Generic` types that games
+expose in public APIs. Read operations are native (layout-accurate); mutations
+that need C#-side invariants (`HashSet` resize/rehash) go through IL2CPP.
+
+```cpp
+#include <BNM/MonoStructures/Queue.hpp>
+#include <BNM/MonoStructures/Stack.hpp>
+#include <BNM/MonoStructures/HashSet.hpp>
+#include <BNM/MonoStructures/ReadOnlyList.hpp>
+using namespace BNM::Structures::Mono;
+
+// Queue<T> — native Enqueue/Dequeue/Peek/GetCount/ToVector/ToArray/Contains/Clear
+Queue<int> *queue = ...;
+queue->Enqueue(10);
+int front = queue->Peek();
+int item = queue->Dequeue();
+std::vector<int> qv = queue->ToVector();
+
+// Stack<T> — native Push/Pop/Peek/GetCount/ToVector/ToArray/Contains/Clear
+Stack<int> *stack = ...;
+stack->Push(42);
+int top = stack->Peek();
+int popped = stack->Pop();
+
+// HashSet<T> — native GetCount/Contains/ToVector/ToArray;
+// Add/Remove/Clear/UnionWith/IntersectWith/ExceptWith via IL2CPP
+HashSet<String *> *set = ...;
+bool has = set->Contains(BNM::CreateMonoString("Key"));
+set->Add(BNM::CreateMonoString("NewKey"));
+std::vector<String *> items = set->ToVector();
+
+// IReadOnlyList<T> / IReadOnlyCollection<T> — reflection view (get_Count/get_Item)
+IReadOnlyList<String *> *roList = ...;
+int count = roList->GetCount();
+String *first = roList->GetItem(0);   // or roList[0]
+std::vector<String *> all = roList->ToVector();
+```
+
+---
+
+## 6. Extended .NET Data Types
 
 BNM provides native wrappers for standard .NET value and reference types:
 
@@ -122,16 +164,18 @@ using namespace BNM::Structures::Mono;
 
 // DateTime
 DateTime now = DateTime::Now();
-int year = now.GetYear();
-long long timestamp = now.ToUnixTimestamp();
+int64_t ticks = now.Ticks();
+int hour = now.Hour();          // also Second() / Minute() / Kind()
+DateTime later = now + TimeSpan::FromHours(2);
 
 // TimeSpan
 TimeSpan fiveMinutes = TimeSpan::FromMinutes(5.0);
-double totalSec = fiveMinutes.GetTotalSeconds();
+double totalSec = fiveMinutes.TotalSeconds();   // also TotalMinutes() / TotalHours() / ...
 
 // Guid
-Guid newId = Guid::NewGuid();
-std::string guidStr = newId.ToString();
+Guid empty = Guid::Empty();
+bool isEmpty = empty.IsEmpty();
+std::string guidStr = empty.ToString();
 
 // Nullable<T>
 Nullable<int> optInt(42);
@@ -145,7 +189,7 @@ KeyValuePair<String *, int> pair(BNM::CreateMonoString("Key"), 100);
 
 ---
 
-## 6. Delegates, MulticastDelegates & Actions
+## 7. Delegates, MulticastDelegates & Actions
 
 BNM provides a rich delegate factory suite that converts native C++ lambdas, free functions, and member functions into GC-managed IL2CPP delegates.
 
